@@ -19,6 +19,19 @@ export function createDriveService(env,fetcher=fetch){
  async function allowed(id){const item=await metadata(id);let current=item,seen=new Set();for(let depth=0;depth<16;depth++){if(current.trashed)throw new DriveError('drive_file_not_found',404);if(current.id===root)return item;if(seen.has(current.id))break;seen.add(current.id);const parent=current.parents?.[0];if(!parent)break;current=await metadata(parent)}throw new DriveError('outside_catalog',404)}
  const normalize=f=>({id:f.id,title:f.name,mimeType:f.mimeType,fileSize:f.size||'0',modifiedTime:f.modifiedTime||'',parentId:f.parents?.[0]===root?ALIAS:f.parents?.[0]||''});
  return{
+  async catalog(refresh=false){
+   // Cache only the configured subtree, never other files visible to the account.
+   await allowed(root);
+   const digest=await crypto.subtle.digest('SHA-256',enc.encode(root+'|'+account.client_email));
+   const key='catalog/v1/'+Array.from(new Uint8Array(digest),b=>b.toString(16).padStart(2,'0')).join('')+'.json';
+   let cached;try{cached=await (await env.BUCKET?.get(key))?.json()}catch{}
+   if(!refresh&&cached?.at>Date.now()-3600000)return cached;
+   const entries=new Map();let pageToken='',pages=0;
+   do{if(++pages>35)throw new DriveError('catalog_too_large');const data=await(await google('files',{q:'trashed = false',pageSize:1000,fields:'nextPageToken,incompleteSearch,files(id,name,mimeType,parents,size,modifiedTime)',supportsAllDrives:true,includeItemsFromAllDrives:true,...(pageToken?{pageToken}:{})})).json();if(data.incompleteSearch)throw new DriveError('drive_incomplete_search');for(const f of data.files||[])entries.set(f.id,f);pageToken=data.nextPageToken||''}while(pageToken);
+   const place=id=>{const chain=[],seen=new Set();let f=entries.get(id);while(f&&f.id!==root&&chain.length<64&&!seen.has(f.id)){seen.add(f.id);chain.unshift(f);const parent=f.parents?.[0];if(parent===root)return chain;f=entries.get(parent)}return null};
+   const files=[];for(const f of entries.values()){const chain=place(f.id);if(!chain)continue;files.push({...normalize(f),brand:chain.length>1?chain[0].name:'',path:chain.slice(0,-1).map(x=>x.name).join(' / '),technical:chain.slice(0,-1).some(x=>/^tekniske\s+filer$/i.test(x.name.trim()))})}
+   const snapshot={files,at:Date.now()};await env.BUCKET?.put(key,JSON.stringify(snapshot),{httpMetadata:{contentType:'application/json'}});return snapshot;
+  },
   async status(){const folder=await metadata(root);if(folder.trashed||folder.mimeType!==FOLDER)throw new DriveError('drive_folder_unavailable');return{configured:true,root:ALIAS,title:env.DRIVE_CATALOG_NAME||'4. Brands'}},
   async list(parent=ALIAS,pageToken=''){const folder=await allowed(parent);if(folder.mimeType!==FOLDER)throw new DriveError('not_a_folder',400);if(pageToken.length>4096)throw new DriveError('invalid_page_token',400);const params={q:`'${actual(parent)}' in parents and trashed = false`,pageSize:100,fields:'nextPageToken,incompleteSearch,files(id,name,mimeType,parents,size,modifiedTime)',orderBy:'folder,name',supportsAllDrives:true,includeItemsFromAllDrives:true};if(pageToken)params.pageToken=pageToken;const data=await(await google('files',params)).json();if(data.incompleteSearch)throw new DriveError('drive_incomplete_search');return{files:(data.files||[]).map(normalize),nextPageToken:data.nextPageToken||null}},
   async metadata(id){return normalize(await allowed(id))},
