@@ -1700,7 +1700,7 @@ function renderDrive(cb){if(drv.files===null&&!drv.loading){driveList(false);ret
 /* ---------- Drive sync: every 3D file under 4. Brands / (merke) / Tekniske filer ---------- */
 const AUTO_MAX=30e6,ROOT=DRIVE_ROOT.id,SYNC_VER=3; // raise SYNC_VER when import logic changes, so stored files are processed again
 
-const DS={state:'idle',msg:'',err:null,at:0,index:[],st:{}};
+const DS={updated:false,state:'idle',msg:'',err:null,at:0,index:[],st:{}};
 /* Files with only closed CAD formats are remembered per version, so they are not downloaded again on every sync. */
 let SKIP={};try{SKIP=JSON.parse(ls.get('novooi-drive-skip')||'{}')||{}}catch(e){}
 Object.entries(SKIP).forEach(([id,s])=>{if(s&&s.v===4)DS.st[id]={s:'nocompat',found:s.found||[],msg:s.msg}});
@@ -1722,6 +1722,8 @@ async function placeOf(driveClient,file,budget){let id=file.parentId,tek=false;c
 // Progress must never replace the catalog DOM: native selects, focus and scene selection stay intact.
 function renderDS(){
   document.querySelectorAll('.dsbar').forEach(bar=>{const title=bar.querySelector('b'),detail=bar.querySelector('small'),button=bar.querySelector('.dsnow');if(title)title.textContent=DS.state==='idle'?(DS.err?'Kunne ikke oppdatere Drive':'Produktbibliotek klart'):'Oppdaterer produktbiblioteket…';if(detail)detail.textContent=DS.msg||`${DS.index.length} filer i katalogen`;if(button){button.disabled=DS.state!=='idle';button.textContent=DS.state==='idle'?'Synk nå':'Synker…'}});
+  if(DS.updated)document.querySelectorAll('.dsbar').forEach(bar=>{if(bar.querySelector('.dsview'))return;const show=document.createElement('button');show.className='btn ghost dsview';show.textContent='Vis produkter';show.onclick=()=>{DS.updated=false;renderCatBody()};bar.appendChild(show)});
+  document.querySelectorAll('[data-df]').forEach(card=>{const status=DS.st[card.dataset.df]||{};card.disabled=status.s==='busy';const label=card.querySelector('.dstatus');if(label)label.textContent=status.s==='busy'?'Henter…':status.s==='err'?'Feilet · prøv igjen':'Klikk for å hente'});
   const b=$('#tCat');if(b)b.dataset.sync=DS.state==='idle'?'':'1';
 }
 async function syncDrive(manual){if(DS.state!=='idle'){if(manual)toast('Synkroniseringen pågår allerede');return}
@@ -1732,11 +1734,11 @@ async function syncDrive(manual){if(DS.state!=='idle'){if(manual)toast('Synkroni
     const files=await NOVOOI_LIBRARY.collect({refresh:!!manual});
     const idx=files.filter(isModelFile).map(f=>({id:f.id,title:f.title,size:+f.fileSize||0,mod:f.modifiedTime||'',brand:f.brand||'',path:f.path||''}));
     idx.sort((a,b)=>a.brand.localeCompare(b.brand,'nb')||a.title.localeCompare(b.title,'nb'));
-    DS.index=idx;for(const f of idx){const a=ARCS.get(f.id);if(a&&a.mod!==f.mod)DS.st[f.id]={s:'stale'}}DS.at=Date.now();await IDB.put({id:'drive-index',index:idx,at:DS.at},'catalog');ls.set('novooi-drive-index',JSON.stringify({index:idx,at:DS.at}));
+    DS.updated=JSON.stringify(idx)!==JSON.stringify(DS.index);DS.index=idx;for(const f of idx){const a=ARCS.get(f.id);if(a&&a.mod!==f.mod)DS.st[f.id]={s:'stale'}}DS.at=Date.now();await IDB.put({id:'drive-index',index:idx,at:DS.at},'catalog');ls.set('novooi-drive-index',JSON.stringify({index:idx,at:DS.at}));
     // Keep already imported models, including products used in saved rooms.
     // Geometry is fetched when requested, instead of downloading the entire library every visit.
     DS.msg=`${idx.length} filer klare · Modeller hentes når du velger dem`;
-    if(manual){renderCatBody();toast('Produktbiblioteket er oppdatert')}else if(ui.rtab==='cat')toast('Nye Drive-filer er klare. Åpne Møbler for å se dem.');
+    if(manual)toast('Produktbiblioteket er oppdatert');
   }catch(e){DS.err=e;DS.msg=driveErr(e)[1]}
   DS.state='idle';renderDS();
 }
@@ -1766,7 +1768,7 @@ function dsyncView(list,q,cardHtml){const byBrand=new Map();const g=b=>{if(!byBr
   const noc=[];DS.index.forEach(f=>{const has=[...custom.values()].some(p=>p.rec&&p.rec.drive===f.id);const st=DS.st[f.id];if(st&&st.s==='nocompat'&&!has){noc.push(f);return}if((!has||(st&&st.s!=='done'))&&(!q||f.title.toLowerCase().includes(q)||f.brand.toLowerCase().includes(q)))g(f.brand).files.push(f)});
   const err=DS.err?driveErr(DS.err):null;
   const fileCard=f=>{const st=DS.st[f.id]||{};const big=f.size>AUTO_MAX;const label=st.s==='busy'?'Henter…':st.s==='err'?'Feilet · prøv igjen':big?'Stor fil · klikk for å hente':'Klikk for å hente';
-    return`<button class="card pend" data-df="${esc(f.id)}" ${st.s==='busy'?'disabled':''} title="${esc(f.path?f.path+' / ':'')}${esc(f.title)}"><span class="badge">DRIVE</span><span class="th"><span class="ext">${esc((extOf(f.title)||'fil').toUpperCase())}</span></span><span class="meta"><small class="cbrand">${esc(f.brand)}</small><b>${esc(prettyName(f.title))}</b><small>${fmtMB(f.size)}</small><small style="color:${st.s==='err'?'var(--danger)':'var(--muted)'}">${esc(label)}</small>${st.s==='err'&&st.msg?`<small style="color:var(--danger)">${esc(st.msg)}</small>`:''}</span></button>`};
+    return`<button class="card pend" data-df="${esc(f.id)}" ${st.s==='busy'?'disabled':''} title="${esc(f.path?f.path+' / ':'')}${esc(f.title)}"><span class="badge">DRIVE</span><span class="th"><span class="ext">${esc((extOf(f.title)||'fil').toUpperCase())}</span></span><span class="meta"><small class="cbrand">${esc(f.brand)}</small><b>${esc(prettyName(f.title))}</b><small>${fmtMB(f.size)}</small><small class="dstatus" style="color:${st.s==='err'?'var(--danger)':'var(--muted)'}">${esc(label)}</small>${st.s==='err'&&st.msg?`<small style="color:var(--danger)">${esc(st.msg)}</small>`:''}</span></button>`};
   return`${!window.NOVOOI_STATIC?syncBar():''}
    ${err?`<div class="dmsg err"><b>${esc(err[0])}</b><span>${esc(err[1])}</span></div>`:''}
    ${[...byBrand.entries()].sort((a,b)=>a[0].localeCompare(b[0],'nb')).map(([b,v])=>`<section class="bgrp"><div class="bhead"><b>${esc(b)}</b><small>${v.models.length} modeller${v.files.length?` · ${v.files.length} filer venter`:''}</small></div><div class="grid">${v.models.map(cardHtml).join('')}${v.files.map(fileCard).join('')}</div></section>`).join('')||(DS.state==='idle'&&!err&&!noc.length?'<p class="empty">Fant ingen 3D-filer i produktbiblioteket.</p>':'')}
