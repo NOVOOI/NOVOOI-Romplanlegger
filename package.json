@@ -15,6 +15,10 @@
     "deploy": "npm run build && wrangler deploy"
   },
   "devDependencies": {
+    "esbuild": "0.25.12",
     "wrangler": "4.156.1"
+  },
+  "dependencies": {
+    "openskp": "1.4.0"
   }
 }
