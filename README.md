@@ -88,4 +88,4 @@ SketchUp `.skp` støttes som beta via den fastlåste MIT-pakken OpenSKP. Konvert
 
 Tredjepartsbibliotekenes lisenser er bevart i `public/vendor/`. Eksempelmodellene er ikke virkelige NOVOOI-varer og inngår ikke i handlelisten. Serveren har ingen tilgang til lager eller prisgaranti utover det nettbutikkens offentlige API returnerer.
 
-Modellretning: SKP, glTF/GLB og Collada beholder formatets Y-opp-retning. «Vipp 90°» retter manuelle unntak og lagrer valget. Veggfesting velger den nærmeste 90-gradersretningen og beregner avstanden ut fra den faktiske siden mot veggen.
+Modellretning: SKP, glTF/GLB og Collada beholder formatets Y-opp-retning. «Vipp modell» retter manuelle unntak og lagrer valget. Veggfesting velger den nærmeste 90-gradersretningen og beregner avstanden ut fra den faktiske siden mot veggen.
