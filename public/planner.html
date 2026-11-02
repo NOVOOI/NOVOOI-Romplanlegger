@@ -1776,15 +1776,15 @@ async function startCatalogPreviews(){if(previewQueueRunning||READ_ONLY||window.
   }
 }finally{previewQueueRunning=false;DS.previewMessage='';renderDS()}}
 async function importDrive(driveClient,f,manual){DS.st[f.id]={s:'busy'};renderDS();
-  try{const a=ARCS.get(f.id),saved=a?.mod===f.mod?await IDB.get(a.id,'arcs'):null;const buf=saved?.buf||await downloadDriveFile(f.id);await importDriveBuf(f,buf);DS.st[f.id]={s:'done'};if(manual)toast(`${f.title} er lagt i katalogen`)}
+  try{const a=ARCS.get(f.id),saved=a?.mod===f.mod?await IDB.get(a.id,'arcs'):null;const buf=saved?.buf||await downloadDriveFile(f.id);await importDriveBuf(f,buf,{silent:!manual});DS.st[f.id]={s:'done'};if(manual)toast(`${f.title} er lagt i katalogen`)}
   catch(e){const own=['nomodel','badzip','format','size','3dm_nomesh','rhinolib','rhinowasm','badfile','nozip','noloader','flat2d','nomesh','libload'];
     if(e&&['nomodel','flat2d','3dm_nomesh'].includes(e.code)){const msg=importErr(e);DS.st[f.id]={s:'nocompat',found:e.found||[],msg};SKIP[f.id]={v:4,mod:f.mod,found:e.found||[],msg};ls.set('novooi-drive-skip',JSON.stringify(SKIP))}
     else DS.st[f.id]={s:'err',e,msg:e&&own.includes(e.code)?importErr(e):driveErr(e)[1]};if(e&&AUTH_CODES.includes(e.code))DS.err=e}
   renderDS()}
-async function importDriveBuf(f,buf){const first=await loadModel({buf,name:f.title});const entries=first.info?first.info.models:[f.title];const firstEntry=first.info?first.info.entry:f.title;
+async function importDriveBuf(f,buf,{silent=false}={}){const first=await loadModel({buf,name:f.title,silent});const entries=first.info?first.info.models:[f.title];const firstEntry=first.info?first.info.entry:f.title;
   const arcId='a_d_'+f.id;const stored=await IDB.put({id:arcId,archive:true,fileName:f.title,buf,drive:f.id,mod:f.mod,ver:SYNC_VER});if(stored)ARCS.set(f.id,{id:arcId,mod:f.mod,ver:SYNC_VER});
   const old=[...custom.values()].filter(p=>p.rec&&p.rec.drive===f.id);const kept=new Set();
-  const Q=[...entries];while(Q.length){let entry=Q.shift();let r;try{r=entry===firstEntry?first:await loadModel({buf,name:f.title,entry})}catch(e){continue}
+  const Q=[...entries];while(Q.length){let entry=Q.shift();let r;try{r=entry===firstEntry?first:await loadModel({buf,name:f.title,entry,silent})}catch(e){continue}
     if(entry!==firstEntry&&r.parts>1&&partOf(entry).k==null){for(let i=1;i<r.parts;i++){Q.push(entry+'#'+i);entries.push(entry+'#'+i)}entry=entry+'#0';entries.push(entry)}
     const pe=partOf(entry);const prev=old.find(p=>p.rec.entry===entry&&!kept.has(p.id))||(pe.k===0?old.find(p=>p.rec.entry===pe.file&&!kept.has(p.id)):null);const pr=prev?prev.rec:null;
     const name=pr?pr.name:(entries.length>1?prettyName(entry):[prettyName(entry),prettyName(f.title)].sort((a,b)=>b.length-a.length)[0]);
@@ -2054,7 +2054,7 @@ function downloadFile(blob,name){const url=URL.createObjectURL(blob),a=document.
 function safeFilename(s){return String(s||'design').replace(/[^\p{L}\p{N} _-]/gu,'').slice(0,100)||'design'}
 function loadingStatus(label,done,total){let el=$('#modelProgress');if(!label){el?.remove();return}if(!el){el=document.createElement('div');el.id='modelProgress';el.className='import-progress';el.setAttribute('role','status');el.innerHTML='<span></span><progress aria-label="Klargjør modeller"></progress>';document.body.appendChild(el)}el.firstChild.textContent=label;const bar=el.lastChild;if(total){bar.max=total;bar.value=done}else bar.removeAttribute('value')}
 const originalLoadModel=loadModel;let loadingCount=0;
-loadModel=async function(src){loadingCount++;loadingStatus('Klargjør '+(src.entry||src.name||'3D-modell'));await yieldUI();try{return await originalLoadModel(src)}finally{if(!--loadingCount)loadingStatus('')}};
+loadModel=async function(src){if(src.silent){await yieldUI();return originalLoadModel(src)}loadingCount++;loadingStatus('Klargjør '+(src.entry||src.name||'3D-modell'));await yieldUI();try{return await originalLoadModel(src)}finally{if(!--loadingCount)loadingStatus('')}};
 function qualitySettings(){const low=quality==='fast';renderer.setPixelRatio(Math.min(devicePixelRatio,low?1:1.5));renderer.shadowMap.enabled=!low;resize();S.items.forEach(it=>placeObj(it));dirty=true}
 function getMaterialSlots(p){if(p.custom)return p.slotInfo;const g=buildProduct(p,0);const info=slotsOf(g);const result={slots:info.slots.map(s=>({...s}))};disposeObj(g);return result}
 function applyMaterialOverrides(g,it){if(!it?.materials||!Object.keys(it.materials).length)return;const info=slotsOf(g),owned=[];g.traverse(x=>{if(!x.isMesh)return;const edit=m=>{const setting=it.materials[info.map.get(m)];if(!setting)return m;const clone=m.clone();if(setting.color&&/^#[0-9a-f]{6}$/i.test(setting.color)&&clone.color)clone.color.copy(col(setting.color));if(Number.isFinite(setting.roughness)&&'roughness'in clone)clone.roughness=Math.max(0,Math.min(1,setting.roughness));if(Number.isFinite(setting.metalness)&&'metalness'in clone)clone.metalness=Math.max(0,Math.min(1,setting.metalness));owned.push(clone);return clone};x.material=Array.isArray(x.material)?x.material.map(edit):edit(x.material)});g.userData.ownedMaterials=owned}
