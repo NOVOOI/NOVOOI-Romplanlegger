@@ -707,10 +707,10 @@ function plausible(n,name){const R=sizeRule(name),M=Math.max(n.w,n.d,n.h);return
 function altUnits(raw,zUp,name,cur){const M=rawMax(raw,zUp),R=sizeRule(name);return['mm','cm','m','in'].filter(u=>u!==cur).map(u=>({u,cm:M*UNIT[u]*100})).filter(x=>x.cm>=R.min&&x.cm<=R.max)}
 const fmtCm=v=>(v<10?(Math.round(v*10)/10):Math.round(v)).toString().replace('.',',');
 const custom=new Map(); // id -> product
-const MODEL_EXT=['glb','gltf','fbx','obj','3ds','dae','3dm','step','stp','iges','igs','ifc','dxf','stl'];
+const MODEL_EXT=['glb','gltf','fbx','obj','3ds','dae','3dm','step','stp','iges','igs','ifc','dxf','stl','skp'];
 const RES_EXT=['bin','jpg','jpeg','png','gif','webp','bmp'];
 /* Closed formats that no browser can read (no public reader exists). Files with only these are listed as "needs export", not as errors. */
-const CAD_ONLY=['max','dwg','skp','skb','rfa','rvt','rte','gsm','pln','dgn','c4d','blend','ma','mb','pdf','sat','x_t','prt','sldprt','ipt','f3d'];
+const CAD_ONLY=['max','dwg','skb','rfa','rvt','rte','gsm','pln','dgn','c4d','blend','ma','mb','pdf','sat','x_t','prt','sldprt','ipt','f3d'];
 const CAD_NAME={dwg:'AutoCAD DWG',skp:'SketchUp',rfa:'Revit',rvt:'Revit',gsm:'ArchiCAD',max:'3ds Max',pdf:'PDF',sat:'ACIS',sldprt:'SolidWorks',ipt:'Inventor',c4d:'Cinema 4D',blend:'Blender',dgn:'MicroStation'};
 const ZUP_EXT=['3ds','3dm','step','stp','iges','igs','dxf'];
 /* Loads a library script once, only when a file needs it. */
@@ -836,6 +836,10 @@ async function parseWith(mgr,buf,ext,mtl){
   if(ext==='3ds'){if(!THREE.TDSLoader)throw{code:'noloader'};return new THREE.TDSLoader(mgr).parse(buf,'')}
   if(ext==='obj'){const t=txt(),l=new THREE.OBJLoader(mgr);const m=t.match(/^mtllib\s+(.+)$/m);
     if(m&&THREE.MTLLoader&&mtl[baseOf(m[1].trim())]){const mc=new THREE.MTLLoader(mgr).parse(mtl[baseOf(m[1].trim())],'');mc.preload();l.setMaterials(mc)}return l.parse(t)}
+  if(ext==='skp'){
+    const glb=await new Promise((resolve,reject)=>{const worker=new Worker('vendor/skp-worker.js');const timer=setTimeout(()=>{worker.terminate();reject({code:'badfile'})},120000);worker.onmessage=e=>{clearTimeout(timer);worker.terminate();e.data.error?reject({code:'badfile',message:e.data.error}):resolve(e.data.glb)};worker.onerror=()=>{clearTimeout(timer);worker.terminate();reject({code:'badfile'})};worker.postMessage(buf.slice(0))});
+    return parseWith(mgr,glb,'glb',{});
+  }
   if(ext==='3dm')return parse3dm(buf);
   if(['step','stp','iges','igs'].includes(ext))return parseOcct(buf,ext);
   if(ext==='ifc')return parseIfc(buf);
@@ -847,7 +851,7 @@ function prettyName(n){const m=String(n).match(/#(\d+)$/);const s=String(n).repl
 function prettyName0(n){return String(n).split(/[\\/]/).pop().replace(/\.[^.]+$/,'').replace(/[_-]+/g,' ').replace(/\b3DS?\b|\b3D\b/gi,'').replace(/\s+/g,' ').trim()||'Ny modell'}
 function importErr(e){const c=e&&e.code;
   if(c==='nomodel'){const cad=(e.found||[]).filter(x=>CAD_ONLY.includes(x)).map(x=>CAD_NAME[x]||x.toUpperCase());
-    return cad.length?`Inneholder bare ${[...new Set(cad)].join(', ')}. Dette er lukkede formater som ingen nettleser kan lese. Eksporter modellen til 3DM, STEP, FBX, OBJ, 3DS eller GLB, eller be leverandøren om et av disse formatene.`
+    return cad.length?`Inneholder bare ${[...new Set(cad)].join(', ')}. Dette er lukkede formater som importøren ikke støtter. Eksporter modellen til 3DM, STEP, FBX, OBJ, 3DS eller GLB, eller be leverandøren om et av disse formatene.`
       :`Fant ingen 3D-modell i filen.${(e.found||[]).length?' Innhold: '+e.found.map(x=>x.toUpperCase()).join(', ')+'.':''}`}
   if(c==='flat2d')return'DXF-filen inneholder bare en 2D-tegning, ingen 3D-modell. Be om en 3D-fil (3DM, STEP, FBX, OBJ eller GLB).';
   if(c==='nomesh')return'Filen inneholder ingen synlig 3D-geometri.';
@@ -877,7 +881,7 @@ function normalize(raw,unit,zUp,fit,wall){
 
 /* IndexedDB for uploaded files */
 /* Three stores so startup only reads small records: models (settings, dimensions, thumbnail), arcs (original files), glbs (ready-to-show geometry). */
-const IDB={db:null,async open(){try{this.db=await new Promise((res,rej)=>{const r=indexedDB.open('novooi-romplanlegger',2);r.onupgradeneeded=()=>{const d=r.result;['models','arcs','glbs'].forEach(s=>{if(!d.objectStoreNames.contains(s))d.createObjectStore(s,{keyPath:'id'})})};r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)})}catch(e){this.db=null}},
+const IDB={db:null,async open(){try{this.db=await new Promise((res,rej)=>{const r=indexedDB.open('novooi-romplanlegger',3);r.onupgradeneeded=()=>{const d=r.result;['models','arcs','glbs','catalog'].forEach(s=>{if(!d.objectStoreNames.contains(s))d.createObjectStore(s,{keyPath:'id'})})};r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)})}catch(e){this.db=null}},
   tx(mode,st){return this.db.transaction(st||'models',mode).objectStore(st||'models')},
   put(rec,st){const failed=()=>{modelStorageFailures.add((st||(rec.archive?'arcs':'models'))+':'+rec.id);updateSaveStatus();return false};if(!this.db)return Promise.resolve(failed());if(!st&&rec&&rec.archive)st='arcs';return new Promise(r=>{try{const store=this.tx('readwrite',st),tx=store.transaction;store.put(rec);tx.oncomplete=()=>{modelStorageFailures.delete((st||'models')+':'+rec.id);updateSaveStatus();r(true)};tx.onabort=tx.onerror=()=>r(failed())}catch(e){r(failed())}})},
   get(id,st){if(!this.db)return Promise.resolve(null);return new Promise(r=>{try{const q=this.tx('readonly',st).get(id);q.onsuccess=()=>r(q.result||null);q.onerror=()=>r(null)}catch(e){r(null)}})},
@@ -1348,7 +1352,7 @@ function renderLeft2(lp){
     <div class="sec"><span class="lbl">Møbler</span><p class="hint">Velg et produkt i katalogen, og klikk i rommet for å plassere det, eller dra produktet inn. Dra møbler for å flytte dem. Møbler med rygg fester seg mot nærmeste vegg; hold <kbd>Alt</kbd> for å flytte fritt.</p></div>
     <div class="sec"><span class="lbl">Vegg og tak</span><p class="hint">Stikkontakter, bilder, speil og vegghyller festes på veggen med forsiden ut. Dra dem langs veggen, eller ned på gulvet, så legger de seg med forsiden opp. Velg <b>Tak</b> for å feste dem i taket med forsiden ned. Pendler henger alltid fra taket. Plassering settes ut fra produktnavnet og kan endres under <b>Juster størrelse</b>.</p></div>
     <div class="sec"><span class="lbl">Tastatur</span><p class="hint"><kbd>R</kbd> roter 15°, <kbd>Shift</kbd>+<kbd>R</kbd> roter 90°, <kbd>Del</kbd> fjern, <kbd>Ctrl</kbd>+<kbd>D</kbd> dupliser, <kbd>Ctrl</kbd>+<kbd>Z</kbd> angre, <kbd>Esc</kbd> fjern markering.</p></div>
-    <div class="sec"><span class="lbl">3D-filer</span><p class="hint">Hent filer fra fanen <b>Drive</b>, som starter i mappen 4. Brands, eller last opp fra maskinen. Zip-filer pakkes ut automatisk, og teksturer i samme zip blir med. Inneholder zip-filen flere modeller, kan du velge én eller legge alle i katalogen. Støttet: 3DM (Rhino), GLB, glTF, FBX, OBJ, 3DS, DAE og STL. Rhino-filer må være lagret med visningsmesher. MAX, DWG, RFA og SKP må eksporteres først. Importerte modeller lagres i denne nettleseren.</p></div>`}
+    <div class="sec"><span class="lbl">3D-filer</span><p class="hint">Hent filer fra fanen <b>Drive</b>, som starter i mappen 4. Brands, eller last opp fra maskinen. Zip-filer pakkes ut automatisk, og teksturer i samme zip blir med. Inneholder zip-filen flere modeller, kan du velge én eller legge alle i katalogen. Støttet: 3DM (Rhino), GLB, glTF, FBX, OBJ, 3DS, DAE og STL. Rhino-filer må være lagret med visningsmesher. SketchUp (SKP) støttes som beta. Enkelte SKP-filer må eksporteres til GLB. MAX, DWG og RFA må eksporteres først. Importerte modeller lagres i denne nettleseren.</p></div>`}
 }
 function paint(c){if(READ_ONLY)return;if(selectedWalls.size&&!ui.applyAll){for(const k of selectedWalls){if(k[0]==='o'&&S.wallColors[+k.slice(1)]!=null)S.wallColors[+k.slice(1)]=c;else if(k[0]==='i'&&S.iwalls?.[+k.slice(1)])Object.assign(S.iwalls[+k.slice(1)],{c,ca:c,cb:c})}buildRoom();renderLeft();commit();return}const iws=S.iwalls||[];if(!ui.applyAll&&ui.selIW!=null&&iws[ui.selIW])iws[ui.selIW][ui.iwSide==='b'?'cb':'ca']=c;else if(!ui.applyAll&&ui.selWall!=null)S.wallColors[ui.selWall]=c;else{S.wallColors=S.wallColors.map(()=>c);iws.forEach(w=>{w.c=c;w.ca=c;w.cb=c})}buildRoom();renderLeft();commit()}
 
@@ -1369,7 +1373,7 @@ function renderCatBody(){const cb=$('#cbody'),same=cb.dataset.view===ui.rtab,scr
    ${ui.cat==='dsync'&&!ui.imp?'':list.length?`<div class="grid">${list.map(cardHtml).join('')}</div>`
      :`<p class="empty">${ui.cat==='mine'?'Ingen opplastinger ennå. Last opp en modell over.':'Ingen treff.'}</p>`}`;
   cb.querySelectorAll('.dsnow').forEach(b=>b.onclick=()=>syncDrive(true));
-  cb.querySelectorAll('[data-df]').forEach(b=>b.onclick=async()=>{const f=DS.index.find(x=>x.id===b.dataset.df);if(!f)return;const driveClient=await getDriveClient();if(!driveClient){DS.err={code:'nomcp'};renderDS();return}await importDrive(driveClient,f,true);renderDS()});
+  cb.querySelectorAll('[data-df]').forEach(b=>b.onclick=async()=>{const f=DS.index.find(x=>x.id===b.dataset.df);if(!f)return;const driveClient=await getDriveClient();if(!driveClient){DS.err={code:'nomcp'};renderDS();return}await importDrive(driveClient,f,true);renderCatBody();renderDS()});
   $('#catalogType').onchange=e=>{ui.cat=e.target.value;renderCatBody()};$('#catalogBrand').onchange=e=>{ui.brand=e.target.value;renderCatBody()};
   const qi=$('#q');qi.oninput=e=>{ui.q=e.target.value;const pos=qi.selectionStart;renderCatBody();const n=$('#q');n.focus({preventScroll:true});try{n.setSelectionRange(pos,pos)}catch{}};
 
@@ -1699,7 +1703,7 @@ const AUTO_MAX=30e6,ROOT=DRIVE_ROOT.id,SYNC_VER=3; // raise SYNC_VER when import
 const DS={state:'idle',msg:'',err:null,at:0,index:[],st:{}};
 /* Files with only closed CAD formats are remembered per version, so they are not downloaded again on every sync. */
 let SKIP={};try{SKIP=JSON.parse(ls.get('novooi-drive-skip')||'{}')||{}}catch(e){}
-Object.entries(SKIP).forEach(([id,s])=>{if(s&&s.v===3)DS.st[id]={s:'nocompat',found:s.found||[],msg:s.msg}});
+Object.entries(SKIP).forEach(([id,s])=>{if(s&&s.v===4)DS.st[id]={s:'nocompat',found:s.found||[],msg:s.msg}});
 try{const s=JSON.parse(ls.get('novooi-drive-index')||'null');if(s&&Array.isArray(s.index)){DS.index=s.index;DS.at=s.at||0}}catch(e){}
 let FC={};try{FC=JSON.parse(ls.get('novooi-drive-folders')||'{}')||{}}catch(e){}
 const saveFC=()=>ls.set('novooi-drive-folders',JSON.stringify(FC));
@@ -1715,32 +1719,35 @@ async function placeOf(driveClient,file,budget){let id=file.parentId,tek=false;c
     if(f.p===ROOT)return tek?{brand:f.t,path:chain.reverse().join(' / ')}:null;
     if(/^tekniske\s+filer$/i.test(f.t.trim()))tek=true;chain.push(f.t);id=f.p}
   return null}
-function renderDS(){const ae=document.activeElement&&document.activeElement.id;if((ui.rtab==='cat'&&ae!=='q')||(ui.rtab==='drive'&&ae!=='dq'))renderCatBody();const b=$('#tCat');if(b)b.dataset.sync=DS.state==='idle'?'':'1'}
+// Progress must never replace the catalog DOM: native selects, focus and scene selection stay intact.
+function renderDS(){
+  document.querySelectorAll('.dsbar').forEach(bar=>{const title=bar.querySelector('b'),detail=bar.querySelector('small'),button=bar.querySelector('.dsnow');if(title)title.textContent=DS.state==='idle'?(DS.err?'Kunne ikke oppdatere Drive':'Produktbibliotek klart'):'Oppdaterer produktbiblioteket…';if(detail)detail.textContent=DS.msg||`${DS.index.length} filer i katalogen`;if(button){button.disabled=DS.state!=='idle';button.textContent=DS.state==='idle'?'Synk nå':'Synker…'}});
+  const b=$('#tCat');if(b)b.dataset.sync=DS.state==='idle'?'':'1';
+}
 async function syncDrive(manual){if(DS.state!=='idle'){if(manual)toast('Synkroniseringen pågår allerede');return}
+  if(!manual&&DS.at>Date.now()-3600000)return;
   const driveClient=await getDriveClient();if(!driveClient){DS.err={code:'nomcp'};renderDS();return}
-  DS.state='scan';DS.err=null;DS.msg='Leter etter 3D-filer i 4. Brands…';renderDS();
-  try{const files=await NOVOOI_LIBRARY.collect({technicalOnly:true,onProgress:folders=>{DS.msg='Leter i produktbiblioteket · '+folders+' mapper';renderDS()}});const idx=files.filter(isModelFile).map(f=>({id:f.id,title:f.title,size:+f.fileSize||0,mod:f.modifiedTime||'',brand:f.brand,path:f.path}));const unknown=0;
-    saveFC();idx.sort((a,b)=>a.brand.localeCompare(b.brand,'nb')||a.title.localeCompare(b.title,'nb'));DS.index=idx;DS.at=Date.now();ls.set('novooi-drive-index',JSON.stringify({index:idx,at:DS.at}));
-    if(!unknown){const keep=new Set(idx.map(f=>f.id));for(const[fid,a]of[...ARCS]){if(keep.has(fid))continue;for(const p of[...custom.values()])if(p.rec&&p.rec.drive===fid){custom.delete(p.id);await IDB.del(p.id);await IDB.del(p.id,'glbs')}await IDB.del(a.id);ARCS.delete(fid)}syncItems()}
-    DS.state='import';const todo=idx.filter(f=>{const a=ARCS.get(f.id);return!a||a.mod!==f.mod||a.ver!==SYNC_VER});
-    for(const f of todo.filter(f=>{const a=ARCS.get(f.id);return a&&a.mod===f.mod}))
-      {DS.msg=`Oppdaterer ${f.title}`;renderDS();try{const a=await IDB.get(ARCS.get(f.id).id,'arcs');if(a&&a.buf)await importDriveBuf(f,a.buf);else ARCS.delete(f.id)}catch(e){}}
-    todo.splice(0,todo.length,...todo.filter(f=>{const a=ARCS.get(f.id);return!a||a.mod!==f.mod}));
-    /* Download up to three files at the same time. */
-    const queue=todo.filter(f=>{const sk=SKIP[f.id];if(sk&&sk.v===3&&sk.mod===f.mod)return false;if(f.size>AUTO_MAX){DS.st[f.id]={s:'big'};return false}return true});let done=0;
-    const worker=async()=>{while(queue.length){const f=queue.shift();DS.msg=`Henter modeller fra Drive (${done+1} av ${done+queue.length+1})`;renderDS();await importDrive(driveClient,f);done++}};
-    await Promise.all([worker(),worker(),worker()]);
-    DS.msg=unknown?`${unknown} filer kunne ikke plasseres i mappestrukturen ennå. De tas med ved neste synkronisering.`:''}
-  catch(e){DS.err=e}
-  DS.state='idle';renderDS();renderTotals();shopSync()}
+  DS.state='scan';DS.err=null;DS.msg='Oppdaterer listen fra Drive…';renderDS();
+  try{
+    const files=await NOVOOI_LIBRARY.collect({refresh:!!manual});
+    const idx=files.filter(isModelFile).map(f=>({id:f.id,title:f.title,size:+f.fileSize||0,mod:f.modifiedTime||'',brand:f.brand||'',path:f.path||''}));
+    idx.sort((a,b)=>a.brand.localeCompare(b.brand,'nb')||a.title.localeCompare(b.title,'nb'));
+    DS.index=idx;for(const f of idx){const a=ARCS.get(f.id);if(a&&a.mod!==f.mod)DS.st[f.id]={s:'stale'}}DS.at=Date.now();await IDB.put({id:'drive-index',index:idx,at:DS.at},'catalog');ls.set('novooi-drive-index',JSON.stringify({index:idx,at:DS.at}));
+    // Keep already imported models, including products used in saved rooms.
+    // Geometry is fetched when requested, instead of downloading the entire library every visit.
+    DS.msg=`${idx.length} filer klare · Modeller hentes når du velger dem`;
+    if(manual){renderCatBody();toast('Produktbiblioteket er oppdatert')}else if(ui.rtab==='cat')toast('Nye Drive-filer er klare. Åpne Møbler for å se dem.');
+  }catch(e){DS.err=e;DS.msg=driveErr(e)[1]}
+  DS.state='idle';renderDS();
+}
 async function importDrive(driveClient,f,manual){DS.st[f.id]={s:'busy'};renderDS();
-  try{const buf=await downloadDriveFile(f.id);await importDriveBuf(f,buf);DS.st[f.id]={s:'done'};if(manual)toast(`${f.title} er lagt i katalogen`)}
+  try{const a=ARCS.get(f.id),saved=a?.mod===f.mod?await IDB.get(a.id,'arcs'):null;const buf=saved?.buf||await downloadDriveFile(f.id);await importDriveBuf(f,buf);DS.st[f.id]={s:'done'};if(manual)toast(`${f.title} er lagt i katalogen`)}
   catch(e){const own=['nomodel','badzip','format','size','3dm_nomesh','rhinolib','rhinowasm','badfile','nozip','noloader','flat2d','nomesh','libload'];
-    if(e&&['nomodel','flat2d','3dm_nomesh'].includes(e.code)){const msg=importErr(e);DS.st[f.id]={s:'nocompat',found:e.found||[],msg};SKIP[f.id]={v:3,mod:f.mod,found:e.found||[],msg};ls.set('novooi-drive-skip',JSON.stringify(SKIP))}
+    if(e&&['nomodel','flat2d','3dm_nomesh'].includes(e.code)){const msg=importErr(e);DS.st[f.id]={s:'nocompat',found:e.found||[],msg};SKIP[f.id]={v:4,mod:f.mod,found:e.found||[],msg};ls.set('novooi-drive-skip',JSON.stringify(SKIP))}
     else DS.st[f.id]={s:'err',e,msg:e&&own.includes(e.code)?importErr(e):driveErr(e)[1]};if(e&&AUTH_CODES.includes(e.code))DS.err=e}
   renderDS()}
 async function importDriveBuf(f,buf){const first=await loadModel({buf,name:f.title});const entries=first.info?first.info.models:[f.title];const firstEntry=first.info?first.info.entry:f.title;
-  const arcId='a_d_'+f.id;await IDB.put({id:arcId,archive:true,fileName:f.title,buf,drive:f.id,mod:f.mod,ver:SYNC_VER});ARCS.set(f.id,{id:arcId,mod:f.mod,ver:SYNC_VER});
+  const arcId='a_d_'+f.id;const stored=await IDB.put({id:arcId,archive:true,fileName:f.title,buf,drive:f.id,mod:f.mod,ver:SYNC_VER});if(stored)ARCS.set(f.id,{id:arcId,mod:f.mod,ver:SYNC_VER});
   const old=[...custom.values()].filter(p=>p.rec&&p.rec.drive===f.id);const kept=new Set();
   const Q=[...entries];while(Q.length){let entry=Q.shift();let r;try{r=entry===firstEntry?first:await loadModel({buf,name:f.title,entry})}catch(e){continue}
     if(entry!==firstEntry&&r.parts>1&&partOf(entry).k==null){for(let i=1;i<r.parts;i++){Q.push(entry+'#'+i);entries.push(entry+'#'+i)}entry=entry+'#0';entries.push(entry)}
@@ -1758,12 +1765,12 @@ function dsyncView(list,q,cardHtml){const byBrand=new Map();const g=b=>{if(!byBr
   list.forEach(p=>g(p.brand||'Uten merke').models.push(p));
   const noc=[];DS.index.forEach(f=>{const has=[...custom.values()].some(p=>p.rec&&p.rec.drive===f.id);const st=DS.st[f.id];if(st&&st.s==='nocompat'&&!has){noc.push(f);return}if((!has||(st&&st.s!=='done'))&&(!q||f.title.toLowerCase().includes(q)||f.brand.toLowerCase().includes(q)))g(f.brand).files.push(f)});
   const err=DS.err?driveErr(DS.err):null;
-  const fileCard=f=>{const st=DS.st[f.id]||{};const big=f.size>AUTO_MAX;const label=st.s==='busy'?'Henter…':st.s==='err'?'Feilet · prøv igjen':big?'Stor fil · klikk for å hente':DS.state!=='idle'?'I kø':'Klikk for å hente';
+  const fileCard=f=>{const st=DS.st[f.id]||{};const big=f.size>AUTO_MAX;const label=st.s==='busy'?'Henter…':st.s==='err'?'Feilet · prøv igjen':big?'Stor fil · klikk for å hente':'Klikk for å hente';
     return`<button class="card pend" data-df="${esc(f.id)}" ${st.s==='busy'?'disabled':''} title="${esc(f.path?f.path+' / ':'')}${esc(f.title)}"><span class="badge">DRIVE</span><span class="th"><span class="ext">${esc((extOf(f.title)||'fil').toUpperCase())}</span></span><span class="meta"><small class="cbrand">${esc(f.brand)}</small><b>${esc(prettyName(f.title))}</b><small>${fmtMB(f.size)}</small><small style="color:${st.s==='err'?'var(--danger)':'var(--muted)'}">${esc(label)}</small>${st.s==='err'&&st.msg?`<small style="color:var(--danger)">${esc(st.msg)}</small>`:''}</span></button>`};
   return`${!window.NOVOOI_STATIC?syncBar():''}
    ${err?`<div class="dmsg err"><b>${esc(err[0])}</b><span>${esc(err[1])}</span></div>`:''}
-   ${[...byBrand.entries()].sort((a,b)=>a[0].localeCompare(b[0],'nb')).map(([b,v])=>`<section class="bgrp"><div class="bhead"><b>${esc(b)}</b><small>${v.models.length} modeller${v.files.length?` · ${v.files.length} filer venter`:''}</small></div><div class="grid">${v.models.map(cardHtml).join('')}${v.files.map(fileCard).join('')}</div></section>`).join('')||(DS.state==='idle'&&!err&&!noc.length?'<p class="empty">Fant ingen 3D-filer under 4. Brands / (merke) / Tekniske filer.</p>':'')}
-   ${noc.length?`<details class="noc"><summary>${noc.length} filer må eksporteres til et 3D-format først</summary><p class="note">Disse filene inneholder bare lukkede CAD-formater (som DWG, SketchUp, Revit eller ArchiCAD) som ingen nettleser kan lese. Lagre eller eksporter dem som 3DM, STEP, FBX, OBJ, 3DS eller GLB i samme mappe, så hentes de automatisk ved neste synk.</p>
+   ${[...byBrand.entries()].sort((a,b)=>a[0].localeCompare(b[0],'nb')).map(([b,v])=>`<section class="bgrp"><div class="bhead"><b>${esc(b)}</b><small>${v.models.length} modeller${v.files.length?` · ${v.files.length} filer venter`:''}</small></div><div class="grid">${v.models.map(cardHtml).join('')}${v.files.map(fileCard).join('')}</div></section>`).join('')||(DS.state==='idle'&&!err&&!noc.length?'<p class="empty">Fant ingen 3D-filer i produktbiblioteket.</p>':'')}
+   ${noc.length?`<details class="noc"><summary>${noc.length} filer må eksporteres til et 3D-format først</summary><p class="note">Disse filene inneholder bare lukkede CAD-formater (som DWG, SketchUp, Revit eller ArchiCAD) som importøren ikke støtter. Lagre eller eksporter dem som 3DM, STEP, FBX, OBJ, 3DS eller GLB i samme mappe, så hentes de automatisk ved neste synk.</p>
      <div class="drows">${noc.map(f=>{const st=DS.st[f.id]||{};const fm=[...new Set((st.found||[]).filter(x=>CAD_ONLY.includes(x)).map(x=>CAD_NAME[x]||x.toUpperCase()))];return`<div class="drow" style="cursor:default"><span class="ic">${esc((extOf(f.title)||'fil').toUpperCase())}</span><span style="min-width:0"><b>${esc(f.brand)} · ${esc(prettyName(f.title))}</b><small>${fm.length?'Inneholder '+esc(fm.join(', ')):esc(st.msg||'Ingen 3D-modell')}</small></span><span></span></div>`}).join('')}</div></details>`:''}`}
 
 /* ---------- Selection bar, info, totals ---------- */
@@ -2146,7 +2153,7 @@ setupPolish();setupWorkspaceTools();setupGroundGrid();setupCompactHeader();setup
 resize();buildRoom();syncItems();setMode('3d');renderAll();commit();loop();setupEnhancedWorkspace();workspaceBooted=true;setupStorageUI();unifyActionIcons();setupFeedback();setupMobileWorkspace();
 /* Startup: read only the small model records and show the catalog right away. Geometry loads when a model is placed in the room.
    Models saved by older versions are converted once in the background. */
-(async()=>{if(READ_ONLY){await loadSharedDesign();return}await IDB.open();let recs=await IDB.all();
+(async()=>{if(READ_ONLY){await loadSharedDesign();return}await IDB.open();const savedCatalog=await IDB.get('drive-index','catalog');if(savedCatalog?.at>DS.at){DS.index=savedCatalog.index;DS.at=savedCatalog.at}let recs=await IDB.all();
   const legacyArcs=recs.filter(r=>r.archive);for(const r of legacyArcs){if(r.drive&&String(r.id).startsWith('a_d_'))ARCS.set(r.drive,{id:r.id,mod:r.mod||'',ver:r.ver||1});await IDB.put(r,'arcs');await IDB.del(r.id,'models')}
   recs=recs.filter(r=>!r.archive);const ready=[],old=[];recs.forEach(r=>(r.cv===CV&&r.dims?ready:old).push(r));
   ready.forEach(r=>{if(!r.mount){r.mount=guessMount(r.name);r.flip=false}registerLazy(r)});
