@@ -69,7 +69,11 @@ En opprettet delingslenke gir alle med lenken lesetilgang til en kopi av designe
 
 Besøkende får lesetilgang til innholdet under den konfigurerte produktmappen gjennom appen. Bruk en mappe med materiale som skal være tilgjengelig for brukerne. Ingen besøkende trenger å logge inn i Google. Tjenestekontonøkkelen ligger bare som serverhemmelighet; den sendes aldri til nettleseren.
 
-Automatisk synk henter modeller under `4. Brands / Merke / Tekniske filer`. Mappen kan ha undermapper. Nettleseren kontrollerer oppdateringer ved oppstart og hvert 15. minutt mens siden er synlig. «Synk nå» oppdaterer manuelt. Dette er lesesynk/import til produktkatalogen, ikke opplasting av brukernes design til Google Drive.
+Katalogen omfatter alle støttede 3D-filer og ZIP-pakker under produktmappen, uansett undermappenavn. Serveren bygger en komplett indeks og lagrer den i R2 i én time. «Synk nå» bygger indeksen på nytt. Feil og ufullstendige søk erstatter aldri en ferdig indeks. Filer utenfor produktmappen filtreres bort, og nedlasting kontrollerer fortsatt filens nåværende plassering.
+
+Nettleseren lagrer katalogen i IndexedDB og gjenbruker den mellom besøk. Selve modellen hentes og konverteres ved valg; importerte modeller og originalfiler lagres lokalt. Allerede importerte produkter beholdes når Drive-katalogen endres. Bakgrunnsfremdrift endrer bare statusfeltet, slik at åpne menyer og markeringer beholdes. Bruk «Vis produkter» for å vise en ny katalog etter synk.
+
+SketchUp `.skp` støttes som beta via den fastlåste MIT-pakken OpenSKP. Konvertering til GLB kjører i en separat Web Worker som bygges lokalt med esbuild, inkludert i både Cloudflare- og Pages-bygg. Enkelte SketchUp-versjoner eller modeller kan fortsatt kreve eksport til GLB/OBJ fra SketchUp. Dette er lesesynk/import til produktkatalogen, ikke opplasting av design til Google Drive.
 
 ## Kodekart
 
