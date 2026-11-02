@@ -1,0 +1,42 @@
+/* Phone workspace overrides, kept after desktop and shared polish rules. */
+.mobile-nav,.mobile-sheet-close{display:none}
+@media(max-width:780px){
+ html,body{height:100%;height:100dvh;overflow:hidden;padding:0;overscroll-behavior:none}
+ body{--mobile-bottom:calc(64px + env(safe-area-inset-bottom,0px));--mobile-top:calc(64px + env(safe-area-inset-top,0px))}
+ .top{height:var(--mobile-top);min-height:var(--mobile-top);padding:env(safe-area-inset-top,0px) 10px 0;flex-wrap:nowrap;gap:8px}
+ .top .brand,.top>.sp{display:none}.top .plan-identity{flex:1;min-width:0;margin:0}.top .plan-identity .title-in{width:100%;font-size:16px;padding:4px 0;text-overflow:ellipsis}
+ .top .save-group{gap:0}.top .save-group #saveState{display:none}.top .ibtn{height:44px;min-width:44px;padding:0 10px;flex:none}.top #saveDesign span{display:inline}.top #shareDesign span{display:none}
+ .app,.app.nopanel{position:fixed;top:var(--mobile-top);bottom:var(--mobile-bottom);left:0;right:0;height:auto;display:block;padding:0;overflow:hidden}
+ .stage{width:100%;height:100%;min-height:0;border:0;border-radius:0}
+ .st-top{top:8px;left:8px;right:8px;gap:8px;flex-wrap:nowrap;align-items:center;z-index:43}
+ .st-top .vseg{display:flex}.st-top .vseg button{min-width:44px;min-height:44px}
+ .st-top .tools .ibtn{flex:none;min-width:44px;height:44px;padding:0 10px}.st-top #sceneLighting{order:0;min-height:44px;font-size:12px}.st-top #sceneLighting span{max-width:70px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+ .st-info{left:8px;right:8px;bottom:10px;flex-wrap:wrap;gap:4px;max-width:calc(100% - 16px)}
+ .mobile-nav{position:fixed;left:0;right:0;bottom:0;z-index:65;height:var(--mobile-bottom);padding:5px max(6px,env(safe-area-inset-right,0px)) calc(5px + env(safe-area-inset-bottom,0px)) max(6px,env(safe-area-inset-left,0px));display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px;background:var(--panel);border-top:1px solid var(--line)}
+ .mobile-nav button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;border:0;border-radius:8px;background:transparent;color:var(--muted);font-size:10px;min-height:48px;min-width:0}.mobile-nav button[aria-pressed=true]{background:var(--accent-soft);color:var(--ink);font-weight:600}
+ .app .cat{display:none;position:fixed;z-index:55;left:0;right:0;bottom:var(--mobile-bottom);top:auto;width:100%;height:min(66dvh,620px);min-height:0;max-height:calc(100dvh - var(--mobile-top) - var(--mobile-bottom) - 24px);border-radius:18px 18px 0 0;box-shadow:0 -8px 32px #0002;overflow:hidden;scrollbar-gutter:auto}
+ body[data-mobile-sheet=catalog] .app .cat{display:flex;flex-direction:column}.mobile-sheet-close{display:flex;align-self:flex-end;margin:8px 12px 4px;min-height:44px;flex:none;font-size:12px}.cat .ctabs{flex:none}.cat .ctabs button{min-height:44px}.cat .cbody{overflow:auto;min-height:0;flex:1;overscroll-behavior:contain;padding:12px}.catalog-footer{padding:8px 12px}.catalog-footer .pill-total{min-height:44px}
+ .app .lp{position:fixed;z-index:56;left:0;right:0;top:auto;bottom:var(--mobile-bottom);width:100%;max-height:65dvh;padding:18px 16px 24px;border-radius:18px 18px 0 0;box-shadow:0 -8px 32px #0002;overflow:auto;overscroll-behavior:contain}.app.nopanel .lp{display:none}
+ .pclose{min-width:44px;min-height:44px}.lp input:not([type=range]):not([type=color]),.cat input:not([type=range]):not([type=color]),.cat select,.lp select{font-size:16px;min-height:44px}.lp .ph{flex-wrap:wrap}.fields>*{min-width:0}
+ .selbar{bottom:48px;max-height:45%;overflow:auto;left:8px;right:8px;width:auto;max-width:none;transform:none;padding:10px;gap:8px;justify-content:flex-start;overscroll-behavior:contain}.selbar .acts{display:flex;flex-wrap:wrap;gap:6px}.selbar .ibtn{min-height:44px}.selbar .nm{max-width:100%}.precision-controls label{min-width:80px}.precision-controls input{font-size:16px}
+ .planner-tool-panel,.lighting-panel{top:112px;right:8px;bottom:8px;left:auto;width:min(320px,calc(100% - 16px));max-height:calc(100% - 120px);overflow:auto}
+ .roompop{max-height:65%;overflow:auto}.placement-help{bottom:56px;width:auto;max-width:calc(100% - 24px);font-size:12px}.header-menu{top:var(--mobile-top);right:8px;max-height:calc(100dvh - var(--mobile-top) - 12px);overflow:auto}.header-menu .ibtn{height:44px;min-width:44px;width:100%;justify-content:flex-start}.header-menu #undo,.header-menu #redo{width:100%;margin:0;padding:0 10px}
+ .toast{bottom:calc(var(--mobile-bottom) + 12px);width:max-content;max-width:calc(100% - 24px);text-align:center;border-radius:12px}.design-dialog{width:calc(100% - 16px);max-height:calc(100dvh - 32px);padding:16px}.design-dialog input:not([type=range]),.design-dialog select,.design-dialog textarea{font-size:16px}.camera-form{flex-wrap:wrap}.camera-form label{min-width:100px}.import-progress{bottom:calc(var(--mobile-bottom) + 8px)}
+ .presenting .mobile-nav,.presenting .mobile-sheet-close,.readonly .mobile-nav{display:none!important}.presenting .app,.readonly .app{bottom:0}.presenting .app{top:0}.readonly .app .cat{display:none!important}
+}
+@media(max-width:780px) and (max-height:500px){.app .cat,.app .lp{max-height:calc(100dvh - var(--mobile-top) - var(--mobile-bottom) - 8px)}.st-info{display:none}}
+
+/* Minimal phone header and an on-demand room tools menu. */
+.mobile-tools-toggle,.mobile-tool-label{display:none}
+@media(max-width:780px){
+ .st-top .tools #zin,.st-top .tools #zout{display:none!important}
+ .st-top .tools{display:none;position:absolute;right:0;top:52px;width:220px;max-width:calc(100vw - 16px);max-height:calc(100dvh - 260px);overflow:auto;flex-direction:column;align-items:stretch;padding:6px;background:var(--panel);border:1px solid var(--line);border-radius:12px;box-shadow:0 8px 28px #0002;gap:4px}
+ .mobile-tools-open .st-top .tools{display:flex}
+ .st-top .tools .ibtn{width:100%;justify-content:flex-start;min-height:44px;border-color:transparent;font-size:12px;gap:10px}
+ .mobile-tool-label{display:inline}.st-top .mobile-tools-toggle{display:inline-flex;min-height:44px;font-size:12px;padding:0 12px;flex:none}
+ .st-top #sceneLighting{width:44px;min-width:44px;padding:0;font-size:18px}.st-top #sceneLighting span{display:none}
+ .st-top .vseg{flex:none}.st-top .sp{min-width:0}
+ .planner-tool-panel,.lighting-panel{top:60px;max-height:calc(100% - 68px)}
+ .header-menu #shareDesign span{display:inline!important}
+ .readonly .mobile-tools-toggle{display:none!important}
+}

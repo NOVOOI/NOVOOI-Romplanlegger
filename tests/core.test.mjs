@@ -1,0 +1,9 @@
+import test from 'node:test';import assert from 'node:assert/strict';import '../public/planner-core.js';
+const {overlaps,validate,priceInfo}=globalThis.NovooiCore;
+const a={x:0,z:0,w:100,d:100,rot:0,bottom:0,top:100};
+test('placement handles overlap, edge contact, rotation and different elevations',()=>{assert.equal(overlaps(a,{...a,x:50}),true);assert.equal(overlaps(a,{...a,x:100}),false);assert.equal(overlaps(a,{...a,x:150}),false);assert.equal(overlaps(a,{...a,x:110,rot:45}),true);assert.equal(overlaps(a,{...a,bottom:101,top:200}),false)});
+test('unpriced examples never inflate a customer total',()=>{assert.equal(priceInfo({}, {placeholder:true,price:9999}).amount,0);assert.equal(priceInfo({}, {custom:true,price:0}).status,'missing');assert.equal(priceInfo({}, {custom:true,price:200}).status,'manual')});
+test('price distinguishes unselected from a chosen variant',()=>{const p={custom:true,shop:{min:100,attrs:[{name:'Color'}],vars:[{price:200,sel:{Color:'Blue'}}]}};assert.equal(priceInfo({},p).status,'estimate');assert.equal(priceInfo({sel:{Color:'Blue'}},p).amount,200);assert.equal(priceInfo({sel:{Color:'Blue'}},p).status,'priced')});
+const design=()=>({format:'novooi-design',version:1,plan:{wallH:260,corners:[{x:0,z:0},{x:500,z:0},{x:0,z:400}],items:[{u:'test',pid:'chair',x:100,z:100,rot:0}]},models:[]});
+test('valid design and user material changes survive serialization',()=>{const d=design();d.plan.items[0].materials={0:{color:'#abcdef',roughness:.6}};assert.deepEqual(validate(JSON.parse(JSON.stringify(d))),d)});
+test('malformed imported positions, duplicate ids and oversized collections are rejected',()=>{const d=design();d.plan.items[0].x=NaN;assert.throws(()=>validate(d));const copy=design();copy.plan.items.push({...copy.plan.items[0]});assert.throws(()=>validate(copy));const many=design();many.plan.items=Array(501).fill(many.plan.items[0]);assert.throws(()=>validate(many))});

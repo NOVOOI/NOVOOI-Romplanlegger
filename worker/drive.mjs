@@ -1,0 +1,27 @@
+const FOLDER='application/vnd.google-apps.folder',ALIAS='catalog-root',tokens=new Map(),enc=new TextEncoder();
+export class DriveError extends Error{constructor(code,status=503){super(code);this.code=code;this.status=status}}
+const b64=bytes=>btoa(String.fromCharCode(...new Uint8Array(bytes))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+export function createDriveService(env,fetcher=fetch){
+ let account;try{account=JSON.parse(env.GOOGLE_SERVICE_ACCOUNT_JSON||'null')}catch{throw new DriveError('drive_not_configured')}
+ if(!account?.client_email||!account.private_key||!env.DRIVE_ROOT_FOLDER_ID)throw new DriveError('drive_not_configured');
+ const root=env.DRIVE_ROOT_FOLDER_ID;if(!/^[\w-]{10,200}$/.test(root))throw new DriveError('drive_not_configured');
+ async function accessToken(){const cacheKey=account.client_email+'|'+account.private_key,old=tokens.get(cacheKey);if(old?.until>Date.now()+60000)return old.value;
+  const now=Math.floor(Date.now()/1000),header=b64(enc.encode(JSON.stringify({alg:'RS256',typ:'JWT'}))),claim=b64(enc.encode(JSON.stringify({iss:account.client_email,scope:'https://www.googleapis.com/auth/drive.readonly',aud:'https://oauth2.googleapis.com/token',iat:now,exp:now+3600}))),unsigned=header+'.'+claim;
+  let key;try{key=await crypto.subtle.importKey('pkcs8',Uint8Array.from(atob(account.private_key.replace(/-----[^-]+-----/g,'').replace(/\s/g,'')),x=>x.charCodeAt(0)),{name:'RSASSA-PKCS1-v1_5',hash:'SHA-256'},false,['sign'])}catch{throw new DriveError('drive_credentials_invalid')}
+  const assertion=unsigned+'.'+b64(await crypto.subtle.sign('RSASSA-PKCS1-v1_5',key,enc.encode(unsigned)));
+  const response=await fetcher('https://oauth2.googleapis.com/token',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams({grant_type:'urn:ietf:params:oauth:grant-type:jwt-bearer',assertion}),signal:AbortSignal.timeout(20000)});
+  if(!response.ok)throw new DriveError('drive_credentials_invalid');const data=await response.json();if(!data.access_token)throw new DriveError('drive_credentials_invalid');
+  if(tokens.size>32)tokens.clear();tokens.set(cacheKey,{value:data.access_token,until:Date.now()+Math.min(Number(data.expires_in)||3600,3600)*1000});return data.access_token;
+ }
+ const actual=id=>{id=id===ALIAS?root:id;if(!/^[\w-]{10,200}$/.test(id||''))throw new DriveError('invalid_file_id',400);return id};
+ async function google(path,params={}){const url=new URL('https://www.googleapis.com/drive/v3/'+path);for(const [k,v]of Object.entries(params))url.searchParams.set(k,String(v));const r=await fetcher(url.href,{headers:{Authorization:'Bearer '+await accessToken()},signal:AbortSignal.timeout(30000),redirect:'error'});if(!r.ok)throw new DriveError(r.status===404?'drive_file_not_found':r.status===403?'drive_access_denied':r.status===429?'rate_limited':'drive_unavailable',r.status===404?404:r.status===429?429:503);return r}
+ const metadata=async id=>(await google('files/'+actual(id),{fields:'id,name,mimeType,parents,size,modifiedTime,trashed',supportsAllDrives:true})).json();
+ async function allowed(id){const item=await metadata(id);let current=item,seen=new Set();for(let depth=0;depth<16;depth++){if(current.trashed)throw new DriveError('drive_file_not_found',404);if(current.id===root)return item;if(seen.has(current.id))break;seen.add(current.id);const parent=current.parents?.[0];if(!parent)break;current=await metadata(parent)}throw new DriveError('outside_catalog',404)}
+ const normalize=f=>({id:f.id,title:f.name,mimeType:f.mimeType,fileSize:f.size||'0',modifiedTime:f.modifiedTime||'',parentId:f.parents?.[0]===root?ALIAS:f.parents?.[0]||''});
+ return{
+  async status(){const folder=await metadata(root);if(folder.trashed||folder.mimeType!==FOLDER)throw new DriveError('drive_folder_unavailable');return{configured:true,root:ALIAS,title:env.DRIVE_CATALOG_NAME||'4. Brands'}},
+  async list(parent=ALIAS,pageToken=''){const folder=await allowed(parent);if(folder.mimeType!==FOLDER)throw new DriveError('not_a_folder',400);if(pageToken.length>4096)throw new DriveError('invalid_page_token',400);const params={q:`'${actual(parent)}' in parents and trashed = false`,pageSize:100,fields:'nextPageToken,incompleteSearch,files(id,name,mimeType,parents,size,modifiedTime)',orderBy:'folder,name',supportsAllDrives:true,includeItemsFromAllDrives:true};if(pageToken)params.pageToken=pageToken;const data=await(await google('files',params)).json();if(data.incompleteSearch)throw new DriveError('drive_incomplete_search');return{files:(data.files||[]).map(normalize),nextPageToken:data.nextPageToken||null}},
+  async metadata(id){return normalize(await allowed(id))},
+  async download(id){const file=await allowed(id),max=Math.min(Number(env.DRIVE_MAX_FILE_MB)||100,250)*1000000;if(file.mimeType===FOLDER||file.mimeType?.startsWith('application/vnd.google-apps.'))throw new DriveError('unsupported_file',400);if(Number(file.size)>max)throw new DriveError('file_too_large',413);const response=await google('files/'+actual(id),{alt:'media',supportsAllDrives:true});if(Number(response.headers.get('content-length'))>max)throw new DriveError('file_too_large',413);return new Response(response.body,{headers:{'Content-Type':'application/octet-stream','Content-Disposition':"attachment; filename*=UTF-8''"+encodeURIComponent(file.name),'Cache-Control':'private, no-store','X-Content-Type-Options':'nosniff'}})}
+ };
+}
