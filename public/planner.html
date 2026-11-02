@@ -2177,7 +2177,7 @@ resize();buildRoom();syncItems();setMode('3d');renderAll();commit();loop();setup
 (async()=>{if(READ_ONLY){await loadSharedDesign();return}await IDB.open();const savedCatalog=await IDB.get('drive-index','catalog');if(savedCatalog?.at>DS.at){DS.index=savedCatalog.index.filter(isModelFile);DS.at=savedCatalog.at}let recs=await IDB.all();
   const legacyArcs=recs.filter(r=>r.archive);for(const r of legacyArcs){if(r.drive&&String(r.id).startsWith('a_d_'))ARCS.set(r.drive,{id:r.id,mod:r.mod||'',ver:r.ver||1});await IDB.put(r,'arcs');await IDB.del(r.id,'models')}
   recs=recs.filter(r=>!r.archive);const ready=[],old=[];recs.forEach(r=>(r.cv===CV&&r.dims?ready:old).push(r));
-  ready.forEach(r=>{if(!r.mount){r.mount=guessMount(r.name);r.flip=false}registerLazy(r)});
+  ready.forEach(r=>{if(r.upsrc!=='user'&&!r.normalized&&['glb','gltf','skp','dae'].includes(extOf(partOf(r.entry||r.fileName).file))&&upOf(r.zUp)!=='y'){const old=upOf(r.zUp);if(old.endsWith('z'))[r.dims.d,r.dims.h]=[r.dims.h,r.dims.d];else if(old.endsWith('x'))[r.dims.w,r.dims.h]=[r.dims.h,r.dims.w];r.zUp='y';delete r.thumb;IDB.put(r)}if(!r.mount){r.mount=guessMount(r.name);r.flip=false}registerLazy(r)});
   syncItems();renderCatBody();renderSelbar();renderTotals();
   const startSync=async()=>{startCatalogPreviews();const config=await NOVOOI_LIBRARY.config();if(!config.driveConfigured)return;syncDrive(false);setInterval(()=>{if(document.visibilityState==='visible')syncDrive(false)},15*60*1000)};
   if(!old.length){if(!window.NOVOOI_STATIC)setTimeout(startSync,600);return}
