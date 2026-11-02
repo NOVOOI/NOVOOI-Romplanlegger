@@ -71,7 +71,7 @@ Besøkende får lesetilgang til innholdet under den konfigurerte produktmappen g
 
 Katalogen omfatter alle støttede 3D-filer og ZIP-pakker under produktmappen, uansett undermappenavn. Serveren bygger en komplett indeks og lagrer den i R2 i én time. «Synk nå» bygger indeksen på nytt. Feil og ufullstendige søk erstatter aldri en ferdig indeks. Filer utenfor produktmappen filtreres bort, og nedlasting kontrollerer fortsatt filens nåværende plassering.
 
-Nettleseren lagrer katalogen i IndexedDB og gjenbruker den mellom besøk. Selve modellen hentes og konverteres ved valg; importerte modeller og originalfiler lagres lokalt. Allerede importerte produkter beholdes når Drive-katalogen endres. Bakgrunnsfremdrift endrer bare statusfeltet, slik at åpne menyer og markeringer beholdes. Bruk «Vis produkter» for å vise en ny katalog etter synk.
+Nettleseren lagrer katalogen i IndexedDB og gjenbruker den mellom besøk. Filene vises straks i katalogen og fordeles i kategorier ut fra produktnavn og mappe. Manglende modellbilder bygges automatisk i bakgrunnen, med synlige produkter prioritert. Modeller, bilder og originalfiler lagres lokalt. Ukjent kategori vises under Andre produkter. Allerede importerte produkter beholdes når Drive-katalogen endres. Bakgrunnsfremdrift endrer bare statusfeltet, slik at åpne menyer og markeringer beholdes. Bruk «Vis produkter» for å vise en ny katalog etter synk.
 
 SketchUp `.skp` støttes som beta via den fastlåste MIT-pakken OpenSKP. Konvertering til GLB kjører i en separat Web Worker som bygges lokalt med esbuild, inkludert i både Cloudflare- og Pages-bygg. Enkelte SketchUp-versjoner eller modeller kan fortsatt kreve eksport til GLB/OBJ fra SketchUp. Dette er lesesynk/import til produktkatalogen, ikke opplasting av design til Google Drive.
 
@@ -87,3 +87,5 @@ SketchUp `.skp` støttes som beta via den fastlåste MIT-pakken OpenSKP. Konvert
 - `tests/`: automatiserte tester.
 
 Tredjepartsbibliotekenes lisenser er bevart i `public/vendor/`. Eksempelmodellene er ikke virkelige NOVOOI-varer og inngår ikke i handlelisten. Serveren har ingen tilgang til lager eller prisgaranti utover det nettbutikkens offentlige API returnerer.
+
+Modellretning: SKP, glTF/GLB og Collada beholder formatets Y-opp-retning. «Vipp 90°» retter manuelle unntak og lagrer valget. Veggfesting velger den nærmeste 90-gradersretningen og beregner avstanden ut fra den faktiske siden mot veggen.
