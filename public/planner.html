@@ -431,7 +431,7 @@ const RUG=[{n:'Havre',c:'#D8CCB8'},{n:'Skog',c:'#5D6B57'},{n:'Terrakotta',c:'#B0
 const POT=[{n:'Terrakotta',c:'#B5694B'},{n:'Sort keramikk',c:'#2A2A2A'},{n:'Hvit keramikk',c:'#ECEAE5'}];
 const CUSTOMV=[{n:'Original',c:null}];
 
-const CATS=[{id:'all',n:'Alle'},{id:'dsync',n:'Fra Drive'},{id:'sofa',n:'Sofaer'},{id:'chair',n:'Stoler'},{id:'table',n:'Bord'},{id:'storage',n:'Oppbevaring'},{id:'bed',n:'Soverom'},{id:'light',n:'Belysning'},{id:'deco',n:'Tekstil og planter'},{id:'door',n:'Dører og vinduer'},{id:'mine',n:'Mine opplastinger'}];
+const CATS=[{id:'all',n:'Alle'},{id:'dsync',n:'Fra Drive'},{id:'sofa',n:'Sofaer'},{id:'chair',n:'Stoler'},{id:'table',n:'Bord'},{id:'storage',n:'Oppbevaring'},{id:'bed',n:'Soverom'},{id:'light',n:'Belysning'},{id:'deco',n:'Tekstil og planter'},{id:'door',n:'Dører og vinduer'},{id:'other',n:'Andre produkter'},{id:'mine',n:'Mine opplastinger'}];
 const PRODUCTS=[
  {id:'sofa3',name:'Lune sofa, 3-seter',cat:'sofa',price:24990,w:228,d:94,h:80,vars:FAB,b:'sofa',o:{seats:3}},
  {id:'sofa2',name:'Lune sofa, 2-seter',cat:'sofa',price:19990,w:176,d:94,h:80,vars:FAB,b:'sofa',o:{seats:2}},
@@ -682,7 +682,7 @@ function upRot(o,up){up=typeof up==='string'?up:(up?'z':'y');o.rotation.set(0,0,
   if(up==='z')o.rotation.x=-Math.PI/2;else if(up==='-z')o.rotation.x=Math.PI/2;else if(up==='-y')o.rotation.x=Math.PI;else if(up==='x')o.rotation.z=Math.PI/2;else if(up==='-x')o.rotation.z=-Math.PI/2}
 /* Picks the up axis from the model's flat surfaces: seats, tabletops and shelves are horizontal when furniture stands upright.
    Keeps the format's default unless another axis clearly has more horizontal surface area. */
-function autoUp(raw,ext){const def=ZUP_EXT.includes(ext)?'z':'y';const acc={x:0,y:0,z:0};let total=0;raw.updateMatrixWorld(true);
+function autoUp(raw,ext){if(['glb','gltf','skp','dae'].includes(ext))return'y';const def=ZUP_EXT.includes(ext)?'z':'y';const acc={x:0,y:0,z:0};let total=0;raw.updateMatrixWorld(true);
   const A=new THREE.Vector3(),B=new THREE.Vector3(),C=new THREE.Vector3(),n=new THREE.Vector3(),e1=new THREE.Vector3();
   raw.traverse(o=>{const g=o.isMesh&&o.geometry;if(!g||!g.attributes.position)return;const pos=g.attributes.position,idx=g.index;const tri=(idx?idx.count:pos.count)/3;const st=Math.max(1,Math.floor(tri/20000));
     for(let t=0;t<tri;t+=st){const i0=idx?idx.getX(t*3):t*3,i1=idx?idx.getX(t*3+1):t*3+1,i2=idx?idx.getX(t*3+2):t*3+2;
@@ -1267,11 +1267,14 @@ addEventListener('pointerup',e=>{if(READ_ONLY)return;
     else if(h.type==='iwall'){select(null);ui.iwSide=h.side||'a';ui.selWall=null;ui.selIW=h.k;ui.applyAll=false;openTab('walls')}}
   down=null});
 
+function nearestWallRotation(rotation,normal){const base=Math.atan2(normal.x,normal.z)*180/Math.PI;return base+Math.round(((rotation||0)-base)/90)*90}
 function snapItem(it,x,z,on){const p=product(it.pid);if(!p||!on)return{x,z};if(p.nosnap||!snapPrefs.walls)return freeSnap(it,x,z,on);
-  let best=null;snapWalls().forEach(w0=>{const w=sided(w0,x,z);const t=(x-w.A.x)*w.d.x+(z-w.A.z)*w.d.z;if(t<-10||t>w.L+10)return;const dist=(x-w.A.x)*w.nI.x+(z-w.A.z)*w.nI.z;const target=p.d/2+1.5+(w.so||0);const err=Math.abs(dist-target);
-    if(err<22&&dist>-20&&(!best||err<best.err))best={w,t,err,target}});
-  if(!best)return freeSnap(it,x,z,on);const{w,target}=best;let t=snapCoordinate(best.t);if(w.L>p.w)t=Math.max(p.w/2+1,Math.min(w.L-p.w/2-1,t));
-  const rot=Math.round(Math.atan2(w.nI.x,w.nI.z)*180/Math.PI);return{x:w.A.x+w.d.x*t+w.nI.x*target,z:w.A.z+w.d.z*t+w.nI.z*target,rot}}
+  let best=null;snapWalls().forEach(w0=>{const w=sided(w0,x,z),rot=nearestWallRotation(it.rot,w.nI),angle=(rot-Math.atan2(w.nI.x,w.nI.z)*180/Math.PI)*Math.PI/180;
+    const halfDepth=(Math.abs(Math.cos(angle))*p.d+Math.abs(Math.sin(angle))*p.w)/2,halfWidth=(Math.abs(Math.cos(angle))*p.w+Math.abs(Math.sin(angle))*p.d)/2;
+    const t=(x-w.A.x)*w.d.x+(z-w.A.z)*w.d.z;if(t<-10||t>w.L+10)return;const dist=(x-w.A.x)*w.nI.x+(z-w.A.z)*w.nI.z,target=halfDepth+1.5+(w.so||0),err=Math.abs(dist-target);
+    if(err<22&&dist>-20&&(!best||err<best.err))best={w,t,err,target,halfWidth,rot}});
+  if(!best)return freeSnap(it,x,z,on);const{w,target,halfWidth,rot}=best;let t=snapCoordinate(best.t);if(w.L>halfWidth*2)t=Math.max(halfWidth+1,Math.min(w.L-halfWidth-1,t));
+  return{x:w.A.x+w.d.x*t+w.nI.x*target,z:w.A.z+w.d.z*t+w.nI.z*target,rot}}
 
 /* ---------- Item actions ---------- */
 function select(u){if(READ_ONLY)return;if(!u||!selectedItems.has(u)){selectedItems.clear();refreshGroupOutlines()}ui.sel=u;updSel();renderSelbar();if(!u&&ui.rtab==='prod')ui.rtab=ui.prevTab||'cat';if(ui.rtab==='room'||ui.rtab==='prod'||!u)renderCatBody();dirty=true}
@@ -1367,11 +1370,11 @@ function renderCatBody(){const cb=$('#cbody'),same=cb.dataset.view===ui.rtab,scr
   const list=all.filter(p=>(!ui.brand||brandOf(p)===ui.brand)&&(ui.cat==='all'||(ui.cat==='mine'?p.custom&&!isDrv(p):ui.cat==='dsync'?isDrv(p):p.cat===ui.cat))&&(!q||catalogMatches(p.name+' '+(p.brand||''),q)));
   const cardHtml=p=>`<button class="card" draggable="true" data-p="${p.id}" title="Legg til ${esc(p.name)}">${p.custom?`<span class="badge">${isDrv(p)?'DRIVE':'CAD'}</span>`:''}<span class="th"><img alt="" src="${thumb(p.id)||'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22240%22 height=%22180%22/%3E'}"></span><span class="meta"><small class="cbrand">${esc(p.brand||'NOVOOI')}</small><b>${esc(p.name)}</b><small>${fmtCm(p.w)} × ${fmtCm(p.d)} × ${fmtCm(p.h)} cm</small>${p.custom&&!plausible(p,p.name).ok?'<small style="color:var(--warn)">Sjekk målene</small>':''}<span>${p.price?(p.shop&&p.shop.vars.length>1?'Fra: ':'')+nok(p.price):'Pris ikke satt'}</span></span><span class="add" aria-hidden="true">+</span>${p.custom&&!isDrv(p)?`<span class="rm ${ui.armDel===p.id?'arm':''}" data-rm="${p.id}" role="button" tabindex="0">${ui.armDel===p.id?'Bekreft sletting':'Slett'}</span>`:''}</button>`;
   cb.innerHTML=`<label class="search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input id="q" type="search" placeholder="Søk i møbler" value="${esc(ui.q)}"></label>
-   ${!window.NOVOOI_STATIC&&ui.cat!=='dsync'?syncBar():''}
+   ${!window.NOVOOI_STATIC&&ui.cat==='mine'?syncBar():''}
    <div class="catalog-filters"><label>Produkttype<select class="txt" id="catalogType">${CATS.map(c=>`<option value="${c.id}" ${ui.cat===c.id?'selected':''}>${c.n}</option>`).join('')}</select></label><label>Merke<select class="txt" id="catalogBrand"><option value="">Alle merker</option>${brands.map(n=>`<option value="${esc(n)}" ${ui.brand===n?'selected':''}>${esc(n)}</option>`).join('')}</select></label></div>
-   ${ui.cat==='dsync'&&!ui.imp?dsyncView(list,q,cardHtml):ui.imp?impForm():`<details class="compact-upload"><summary>＋ Last opp 3D/CAD</summary><div class="upl" id="drop"><b>Last opp 3D-fil</b><p>ZIP, SKP, 3DM, GLB, glTF, FBX, OBJ, 3DS, DAE eller STL fra produsenten. Slipp filen her, eller</p><div class="row" style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn ghost" id="pick">Velg fil</button><button class="btn ghost" id="fromDrive">Hent fra Drive</button></div></div></details>`}
+   ${ui.cat!=='mine'&&!ui.imp?dsyncView(list,q,cardHtml):ui.imp?impForm():`<details class="compact-upload"><summary>＋ Last opp 3D/CAD</summary><div class="upl" id="drop"><b>Last opp 3D-fil</b><p>ZIP, SKP, 3DM, GLB, glTF, FBX, OBJ, 3DS, DAE eller STL fra produsenten. Slipp filen her, eller</p><div class="row" style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn ghost" id="pick">Velg fil</button><button class="btn ghost" id="fromDrive">Hent fra Drive</button></div></div></details>`}
    <p class="catalog-count">${ui.cat==='dsync'?`${list.length} modeller importert · ${DS.index.length} filer i Drive`:list.length+' produkter'} · Shift-klikk i rommet for flervalg</p>
-   ${ui.cat==='dsync'&&!ui.imp?'':list.length?`<div class="grid">${list.map(cardHtml).join('')}</div>`
+   ${ui.cat!=='mine'&&!ui.imp?'':list.length?`<div class="grid">${list.map(cardHtml).join('')}</div>`
      :`<p class="empty">${ui.cat==='mine'?'Ingen opplastinger ennå. Last opp en modell over.':'Ingen treff.'}</p>`}`;
   cb.querySelectorAll('.dsnow').forEach(b=>b.onclick=()=>syncDrive(true));
   cb.querySelectorAll('[data-df]').forEach(b=>b.onclick=async()=>{const f=DS.index.find(x=>x.id===b.dataset.df);if(!f)return;const driveClient=await getDriveClient();if(!driveClient){DS.err={code:'nomcp'};renderDS();return}await importDrive(driveClient,f,true);renderCatBody();renderDS()});
@@ -1382,7 +1385,7 @@ function renderCatBody(){const cb=$('#cbody'),same=cb.dataset.view===ui.rtab,scr
   const fd=$('#fromDrive');if(fd)fd.onclick=()=>{ui.rtab='drive';renderCatBody()};
   const dr=$('#drop');if(dr){dr.ondragover=e=>{if([...e.dataTransfer.types].includes('Files')){e.preventDefault();dr.classList.add('over')}};dr.ondragleave=()=>dr.classList.remove('over');dr.ondrop=e=>{e.preventDefault();dr.classList.remove('over');const f=e.dataTransfer.files[0];if(f)handleFile(f)}}
   if(ui.imp)bindImp();
-}finally{cb.dataset.view=ui.rtab;if(same){cb.scrollTop=scroll;if(upload&&cb.querySelector('.compact-upload'))cb.querySelector('.compact-upload').open=true}cb.querySelectorAll('img').forEach(img=>{img.decoding='async';img.loading='lazy'});cb.querySelectorAll('.card[data-p]').forEach(b=>{b.onclick=e=>{if(e.target.closest('[data-rm]')){delCustom(e.target.closest('[data-rm]').dataset.rm);return}beginPlacement(b.dataset.p)};b.ondragstart=e=>{e.dataTransfer.setData('text/plain',b.dataset.p);e.dataTransfer.effectAllowed='copy';beginPlacement(b.dataset.p)}})}}
+}finally{cb.dataset.view=ui.rtab;if(same){cb.scrollTop=scroll;if(upload&&cb.querySelector('.compact-upload'))cb.querySelector('.compact-upload').open=true}cb.querySelectorAll('img').forEach(img=>{img.decoding='async';img.loading='lazy';img.onerror=()=>{const th=img.closest('.pend .th');if(th)th.textContent='Forhåndsvisning lages…'}});cb.querySelectorAll('.card[data-p]').forEach(b=>{b.onclick=e=>{if(e.target.closest('[data-rm]')){delCustom(e.target.closest('[data-rm]').dataset.rm);return}beginPlacement(b.dataset.p)};b.ondragstart=e=>{e.dataTransfer.setData('text/plain',b.dataset.p);e.dataTransfer.effectAllowed='copy';beginPlacement(b.dataset.p)}})}}
 $('#tCat').onclick=()=>{ui.rtab='cat';renderCatBody()};$('#tDrive').onclick=()=>{ui.rtab='drive';renderCatBody()};$('#tRoom').onclick=()=>{ui.rtab='room';renderCatBody()};$('#totalBtn').onclick=()=>{ui.rtab='room';renderCatBody();if(innerWidth<=780)$('.cat').scrollIntoView({behavior:'smooth'})};
 
 /* Drop catalog items onto stage */
@@ -1462,6 +1465,7 @@ async function storeModel(rec,raw){let r2=raw;
 const modelLoads=new Map();
 function ensureModel(p){if(!p||!p.custom||p.model)return Promise.resolve(p);if(p.loadFailed)return Promise.reject(Error('Modellen mangler. Last opp filen på nytt.'));if(modelLoads.has(p.id))return modelLoads.get(p.id);
   const pr=(async()=>{loadingStatus('Laster '+p.name);await yieldUI();const rec=p.rec;let raw=null;const g=await IDB.get(p.id,'glbs');if(g&&g.glb){try{raw=await parseGLB(g.glb)}catch(e){raw=null}}
+    if(raw&&rec.upsrc!=='user'&&!rec.normalized&&['glb','gltf','skp','dae'].includes(extOf(partOf(rec.entry||rec.fileName).file))&&upOf(rec.zUp)!=='y'){rec.zUp='y';await storeModel(rec,raw)}
     if(raw){const n=rec.normalized?{obj:raw,w:rec.dims.w,d:rec.dims.d,h:rec.dims.h}:normalize(raw,rec.unit,rec.zUp,rec.fit||1,wallOpt(rec));registerCustom(rec,n,raw)}
     else{const a=rec.arc&&await IDB.get(rec.arc,'arcs');if(!a||!a.buf)throw{code:'missing'};const m=await loadModel({buf:a.buf,name:rec.fileName,entry:rec.entry});await storeModel(rec,m.raw)}
     forceRebuild(p.id);if(ui.sel&&S.items.some(i=>i.u===ui.sel&&i.pid===p.id)){renderSelbar();if(ui.rtab==='prod')renderCatBody()}return custom.get(p.id)})();
@@ -1469,7 +1473,8 @@ function ensureModel(p){if(!p||!p.custom||p.model)return Promise.resolve(p);if(p
 function registerLazy(rec){registerCustom(rec,{obj:null,w:rec.dims.w,d:rec.dims.d,h:rec.dims.h},null)}
 function registerCustom(rec,n,raw){custom.set(rec.id,{id:rec.id,name:rec.name,cat:(rec.shop&&rec.shop.cat)||catFrom([rec.name])||'other',price:rec.shop&&rec.shop.min?rec.shop.min:rec.price,w:n.w,d:n.d,h:n.h,vars:CUSTOMV,custom:true,model:n.obj,nosnap:false,arc:rec.arc,brand:rec.brand||(rec.shop&&rec.shop.brand)||'',rec,raw,mount:rec.mount||'floor',shop:rec.shop||null,slotInfo:n.obj?slotsOf(n.obj):null});thumbs.delete(rec.id)}
 /* Change the size of a model that is already in the catalog; every placed copy updates. */
-function rescaleCustom(pid,o){const p=custom.get(pid);if(!p)return;if(!p.raw){ensureModel(p).then(()=>rescaleCustom(pid,o)).catch(()=>{});return}const rec=p.rec;const wasMount=p.mount;Object.assign(rec,{unit:o.unit,fit:o.fit||1,zUp:o.zUp,usrc:o.usrc,upsrc:o.upsrc||rec.upsrc,mount:o.mount||'floor',flip:!!o.flip});
+async function tipModel(pid){let p=product(pid);if(!p?.custom||READ_ONLY)return;try{p=await ensureModel(p);const order=['y','z','x','-y','-z','-x'],rec=p.rec;rescaleCustom(pid,{...rec,zUp:order[(order.indexOf(upOf(rec.zUp))+1)%order.length],upsrc:'user'});commit();renderSelbar()}catch{toast('Kunne ikke endre modellretningen')}}
+function rescaleCustom(pid,o){const p=custom.get(pid);if(!p)return;if(!p.raw){ensureModel(p).then(()=>rescaleCustom(pid,o)).catch(()=>{});return}const rec=p.rec;const wasMount=p.mount;delete rec.normalized;Object.assign(rec,{unit:o.unit,fit:o.fit||1,zUp:o.zUp,usrc:o.usrc,upsrc:o.upsrc||rec.upsrc,mount:o.mount||'floor',flip:!!o.flip});
   const n=normalize(p.raw,rec.unit,rec.zUp,rec.fit,wallOpt(rec));Object.assign(p,{w:n.w,d:n.d,h:n.h,model:n.obj,mount:rec.mount,slotInfo:slotsOf(n.obj)});thumbs.delete(pid);
   if(wasMount!==rec.mount)S.items.forEach(it=>{if(it.pid===pid){delete it.mnt;delete it.y;if(rec.mount==='wall')placeOnNearestWall(it,p)}});
   S.items.forEach(it=>{if(it.pid===pid){const ob=objs.get(it.u);if(ob){itemsG.remove(ob);objs.delete(it.u)}}});
@@ -1536,7 +1541,7 @@ const PFIELDS='id,name,sku,type,permalink,prices,brands,attributes,stock_availab
 /* Maps NOVOOI.com categories (Norwegian or English) to the planner's categories. The most specific match wins. */
 const CAT_RULES=[['door',/\bd(ø|o)r|door|vindu|window/i],['light',/lamp|belysning|\blys\b|light|pendel|pendant|lampett/i],['bed',/seng|\bbed|nattbord|bedside|soverom|bedroom|madrass/i],
   ['sofa',/sofa|daybed|sovesofa/i],['chair',/stol|chair|krakk|stool|puff|pouf|benk|bench|lenestol|armchair/i],['table',/bord|table|desk|skrivebord/i],
-  ['storage',/oppbevaring|hylle|reol|skap|skjenk|kommode|storage|shelf|shelv|sideboard|cabinet|garderobe|knagg|hook/i],['deco',/tekstil|pute|teppe|pledd|rug|cushion|throw|plante|plant|vase|dekor|decor|speil|mirror|kunst|art|accessor|interi/i]];
+  ['storage',/oppbevaring|hylle|reol|skap|skjenk|kommode|storage|shelf|shelv|sideboard|cabinet|garderobe|knagg|hook|tralle|trolley|cart/i],['deco',/tekstil|pute|teppe|pledd|rug|cushion|throw|plante|plant|vase|dekor|decor|speil|mirror|kunst|art|accessor|interi/i]];
 function catFrom(list){const names=(list||[]).map(c=>String(c.name||c).replace(/&amp;/g,'&'));
   for(let i=names.length-1;i>=0;i--){const r=CAT_RULES.find(([,re])=>re.test(names[i]));if(r)return r[0]}return null}
 const VFIELDS='id,parent,variation,attributes,prices,stock_availability,is_in_stock';
@@ -1654,7 +1659,7 @@ const getDriveClient=async()=>window.NOVOOI_STATIC?null:{request:async(service,a
 const downloadDriveFile=id=>NOVOOI_LIBRARY.request('download',{id});
 const drv={stack:[DRIVE_ROOT],files:null,next:null,loading:false,err:null,q:'',busy:null,searched:''};
 try{const s=JSON.parse(ls.get('novooi-drive-stack')||'null');if(Array.isArray(s)&&s.length&&s[0].id===DRIVE_ROOT.id)drv.stack=s}catch(e){}
-const isModelFile=f=>f.mimeType!==FOLDER&&(['zip',...MODEL_EXT].includes(extOf(f.title))||/zip/.test(f.mimeType||''));
+const isModelFile=f=>!/(?:\b2d\b|\.(?:dwg|max|rfa|rvt|gsm|pdf))[^/]*\.zip$/i.test(f.title)&&f.mimeType!==FOLDER&&(['zip',...MODEL_EXT].includes(extOf(f.title))||/zip/.test(f.mimeType||''));
 const qEsc=s=>s.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
 async function driveList(more){const driveClient=await getDriveClient();if(!driveClient){drv.err={code:'nomcp'};drv.files=[];renderCatBody();return}
   drv.loading=true;drv.err=null;if(!more){drv.files=null;drv.next=null}renderCatBody();
@@ -1728,12 +1733,12 @@ function renderDS(){
   const b=$('#tCat');if(b)b.dataset.sync=DS.state==='idle'?'':'1';
 }
 async function syncDrive(manual){if(DS.state!=='idle'){if(manual)toast('Synkroniseringen pågår allerede');return}
-  if(!manual&&DS.at>Date.now()-3600000)return;
+  if(!manual&&DS.at>Date.now()-3600000){startCatalogPreviews();return;}
   const driveClient=await getDriveClient();if(!driveClient){DS.err={code:'nomcp'};renderDS();return}
   DS.state='scan';DS.err=null;DS.msg='Oppdaterer listen fra Drive…';renderDS();
   try{
     const files=await NOVOOI_LIBRARY.collect({refresh:!!manual});
-    const idx=files.filter(isModelFile).map(f=>({id:f.id,title:f.title,size:+f.fileSize||0,mod:f.modifiedTime||'',brand:f.brand||'',path:f.path||''}));
+    const idx=files.filter(isModelFile).map(f=>({id:f.id,title:f.title,size:+f.fileSize||0,mod:f.modifiedTime||'',brand:f.brand||'',path:f.path||'',previewId:f.previewId||''}));
     idx.sort((a,b)=>a.brand.localeCompare(b.brand,'nb')||a.title.localeCompare(b.title,'nb'));
     DS.updated=JSON.stringify(idx)!==JSON.stringify(DS.index);DS.index=idx;for(const f of idx){const a=ARCS.get(f.id);if(a&&a.mod!==f.mod)DS.st[f.id]={s:'stale'}}DS.at=Date.now();await IDB.put({id:'drive-index',index:idx,at:DS.at},'catalog');ls.set('novooi-drive-index',JSON.stringify({index:idx,at:DS.at}));
     // Keep already imported models, including products used in saved rooms.
@@ -1741,8 +1746,19 @@ async function syncDrive(manual){if(DS.state!=='idle'){if(manual)toast('Synkroni
     DS.msg=`${idx.length} filer klare · Modeller hentes når du velger dem`;
     if(manual)toast('Produktbiblioteket er oppdatert');
   }catch(e){DS.err=e;DS.msg=driveErr(e)[1]}
-  DS.state='idle';renderDS();
+  DS.state='idle';renderDS();startCatalogPreviews();
 }
+function fileCategory(f){return catFrom([String(f.path||'').replace(/[_-]/g,' '),prettyName(f.title)])||'other'}
+let previewQueueRunning=false;const previewAttempts=new Set();
+function patchCatalogPreviews(){document.querySelectorAll('[data-df]').forEach(card=>{const id=card.dataset.df,p=[...custom.values()].find(p=>p.rec?.drive===id&&p.rec.thumb);if(!p)return;card.disabled=false;card.classList.remove('pend');card.dataset.p=p.id;delete card.dataset.df;const image=card.querySelector('.th');if(image)image.innerHTML=`<img alt="" loading="lazy" src="${p.rec.thumb}">`;const label=card.querySelector('.dstatus');if(label)label.textContent='Klikk for å plassere';card.onclick=()=>beginPlacement(p.id)})}
+async function startCatalogPreviews(){if(previewQueueRunning||READ_ONLY||window.NOVOOI_STATIC)return;previewQueueRunning=true;try{const client=await getDriveClient();if(!client)return;
+  while(true){if(document.visibilityState==='hidden'||drag||placing){await sleep(1500);continue}
+    const visible=new Set([...document.querySelectorAll('[data-df]')].filter(e=>{const r=e.getBoundingClientRect();return r.bottom>0&&r.top<innerHeight}).map(e=>e.dataset.df));const candidates=[...DS.index].sort((a,b)=>(visible.has(b.id)-visible.has(a.id))||(a.size-b.size));const f=candidates.find(f=>{const a=ARCS.get(f.id),key=f.id+'|'+f.mod,skip=SKIP[f.id];return f.size<=100e6&&!previewAttempts.has(key)&&!(skip?.v===4&&skip.mod===f.mod)&&!(a?.mod===f.mod&&[...custom.values()].some(p=>p.rec?.drive===f.id&&p.rec.thumb))&&DS.st[f.id]?.s!=='busy'});if(!f)break;
+    previewAttempts.add(f.id+'|'+f.mod);await yieldUI();await importDrive(client,f,false);patchCatalogPreviews();
+    for(const p of custom.values())if(p.rec?.drive===f.id&&!S.items.some(it=>it.pid===p.id)&&!(ui.rtab==='prod'&&selItem()?.pid===p.id)){if(p.model){p.model.traverse(o=>{if(o.isMesh)for(const m of(Array.isArray(o.material)?o.material:[o.material]))for(const v of Object.values(m))if(v?.isTexture)v.dispose()});disposeObj(p.model)}p.model=null;p.raw=null}
+    if(modelStorageFailures.size)break;await sleep(350);
+  }
+}finally{previewQueueRunning=false}}
 async function importDrive(driveClient,f,manual){DS.st[f.id]={s:'busy'};renderDS();
   try{const a=ARCS.get(f.id),saved=a?.mod===f.mod?await IDB.get(a.id,'arcs'):null;const buf=saved?.buf||await downloadDriveFile(f.id);await importDriveBuf(f,buf);DS.st[f.id]={s:'done'};if(manual)toast(`${f.title} er lagt i katalogen`)}
   catch(e){const own=['nomodel','badzip','format','size','3dm_nomesh','rhinolib','rhinowasm','badfile','nozip','noloader','flat2d','nomesh','libload'];
@@ -1761,15 +1777,15 @@ async function importDriveBuf(f,buf){const first=await loadModel({buf,name:f.tit
     const rec=Object.assign({},pr||{},{id:pr?pr.id:'u_'+uid(),arc:arcId,name,unit:pu.unit,usrc:pu.src,fit:keepUnit?(pr.fit||1):1,zUp,mount:pr?pr.mount:guessMount(name),flip:pr?!!pr.flip:false,fileName:f.title,entry,brand:f.brand,drive:f.id,price:pr?pr.price||0:0});
     kept.add(rec.id);await storeModel(rec,r.raw);if(pr)forceRebuild(rec.id)}
   for(const p of old)if(!kept.has(p.id)){custom.delete(p.id);await IDB.del(p.id);await IDB.del(p.id,'glbs')}
-  syncItems()}
+  if(S.items.some(it=>kept.has(it.pid)))syncItems()}
 function syncBar(){const n=[...custom.values()].filter(p=>p.rec&&p.rec.drive).length,nb=new Set(DS.index.map(f=>f.brand)).size;const when=DS.at?new Date(DS.at).toLocaleString('nb-NO',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}):'';
   return`<div class="dsbar"><div><b>${DS.state==='scan'?'Synkroniserer med Drive…':DS.state==='import'?'Henter modeller fra Drive…':DS.err?'Drive-synk stoppet':DS.at?'Synkronisert med Drive':'Produktbibliotek'}</b><small>${esc(DS.msg||(DS.err?driveErr(DS.err)[0]:DS.at?`${n} modeller fra ${nb} merker · sist ${when}`:'Ikke synkronisert ennå'))}</small>${SS.msg?`<small>${esc(SS.msg)}</small>`:''}</div><button class="btn ghost dsnow" ${DS.state!=='idle'?'disabled':''}>${DS.state!=='idle'?'Synker…':'Synk nå'}</button></div>`}
 function dsyncView(list,q,cardHtml){const byBrand=new Map();const g=b=>{if(!byBrand.has(b))byBrand.set(b,{models:[],files:[]});return byBrand.get(b)};
   list.forEach(p=>g(p.brand||'Uten merke').models.push(p));
-  const noc=[];DS.index.forEach(f=>{const has=[...custom.values()].some(p=>p.rec&&p.rec.drive===f.id);const st=DS.st[f.id];if(st&&st.s==='nocompat'&&!has){noc.push(f);return}if((!has||(st&&st.s!=='done'))&&(!ui.brand||f.brand===ui.brand)&&(!q||catalogMatches(f.title+' '+f.brand,q)))g(f.brand).files.push(f)});
+  const noc=[];DS.index.forEach(f=>{const has=[...custom.values()].some(p=>p.rec&&p.rec.drive===f.id);const st=DS.st[f.id];if(st&&st.s==='nocompat'&&!has){noc.push(f);return}if((!has||(st&&st.s!=='done'))&&(!ui.brand||f.brand===ui.brand)&&(['all','dsync'].includes(ui.cat)||fileCategory(f)===ui.cat)&&(!q||catalogMatches(f.title+' '+f.brand,q)))g(f.brand).files.push(f)});
   const err=DS.err?driveErr(DS.err):null;
-  const fileCard=f=>{const st=DS.st[f.id]||{};const big=f.size>AUTO_MAX;const label=st.s==='busy'?'Henter…':st.s==='err'?'Feilet · prøv igjen':big?'Stor fil · klikk for å hente':'Klikk for å hente';
-    return`<button class="card pend" data-df="${esc(f.id)}" ${st.s==='busy'?'disabled':''} title="${esc(f.path?f.path+' / ':'')}${esc(f.title)}"><span class="badge">DRIVE</span><span class="th"><span class="ext">${esc((extOf(f.title)||'fil').toUpperCase())}</span></span><span class="meta"><small class="cbrand">${esc(f.brand)}</small><b>${esc(prettyName(f.title))}</b><small>${fmtMB(f.size)}</small><small class="dstatus" style="color:${st.s==='err'?'var(--danger)':'var(--muted)'}">${esc(label)}</small>${st.s==='err'&&st.msg?`<small style="color:var(--danger)">${esc(st.msg)}</small>`:''}</span></button>`};
+  const fileCard=f=>{const st=DS.st[f.id]||{};const big=f.size>AUTO_MAX;const label=st.s==='busy'?'Lager forhåndsvisning…':st.s==='err'?'Kunne ikke lese filen · prøv igjen':'Forberedes automatisk';
+    return`<button class="card pend" data-df="${esc(f.id)}" ${st.s==='busy'?'disabled':''} title="${esc(f.path?f.path+' / ':'')}${esc(f.title)}"><span class="badge">DRIVE</span><span class="th">${f.previewId?`<img loading="lazy" alt="${esc(prettyName(f.title))}" src="api/drive?action=thumbnail&id=${encodeURIComponent(f.previewId)}">`:`<span class="ext">Forhåndsvisning lages…</span>`}</span><span class="meta"><small class="cbrand">${esc(f.brand)}</small><b>${esc(prettyName(f.title))}</b><small>${fmtMB(f.size)}</small><small class="dstatus" style="color:${st.s==='err'?'var(--danger)':'var(--muted)'}">${esc(label)}</small>${st.s==='err'&&st.msg?`<small style="color:var(--danger)">${esc(st.msg)}</small>`:''}</span></button>`};
   return`${!window.NOVOOI_STATIC?syncBar():''}
    ${err?`<div class="dmsg err"><b>${esc(err[0])}</b><span>${esc(err[1])}</span></div>`:''}
    ${[...byBrand.entries()].sort((a,b)=>a[0].localeCompare(b[0],'nb')).map(([b,v])=>`<section class="bgrp"><div class="bhead"><b>${esc(b)}</b><small>${v.models.length} modeller${v.files.length?` · ${v.files.length} filer venter`:''}</small></div><div class="grid">${v.models.map(cardHtml).join('')}${v.files.map(fileCard).join('')}</div></section>`).join('')||(DS.state==='idle'&&!err&&!noc.length?'<p class="empty">Fant ingen 3D-filer i produktbiblioteket.</p>':'')}
@@ -1783,7 +1799,7 @@ function renderSelbar(){if(selectedItems.size>1){renderMulti();return}const sb=$
    ${isOpening(p)?openCtl(it,p):''}
    ${p&&p.mount==='wall'?(()=>{const m=mountOf(it,p);return`<div class="vsep"></div><div class="seg mseg" role="group" aria-label="Plassering">${[['wall','Vegg'],['floor','Gulv'],['ceil','Tak']].map(([k,l])=>`<button data-mnt="${k}" aria-pressed="${m===k}">${l}</button>`).join('')}</div>${m==='wall'?`<label class="hgt">Høyde<span class="num"><input id="selY" type="number" min="0" step="1" value="${Math.round(it.y??defElev(p))}" aria-label="Høyde over gulv i cm"><span>cm</span></span></label>`:''}`})():''}
    <div class="vsep"></div><div class="acts">
-   ${p&&p.custom&&p.raw?`<button class="ibtn" data-a="size" title="Juster størrelse" aria-label="Juster størrelse" aria-pressed="${!!ui.sizeOpen}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8h18v8H3z"/><path d="M7 8v3M11 8v4M15 8v3M19 8v4"/></svg></button>`:''}
+   ${p&&p.custom?`<button class="ibtn" data-a="tip" title="Rett opp en modell som ligger sidelengs" aria-label="Snu modellen 90 grader">Vipp 90°</button><button class="ibtn" data-a="size" title="Juster størrelse" aria-label="Juster størrelse" aria-pressed="${!!ui.sizeOpen}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8h18v8H3z"/><path d="M7 8v3M11 8v4M15 8v3M19 8v4"/></svg></button>`:''}
    <button class="ibtn" data-a="rl" title="Roter mot klokka (Shift+R for 90°)" aria-label="Roter mot klokka"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 4v5h5"/><path d="M3.5 9A8.5 8.5 0 1 1 5 16"/></svg></button>
    <button class="ibtn" data-a="rr" title="Roter med klokka" aria-label="Roter med klokka"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 4v5h-5"/><path d="M20.5 9A8.5 8.5 0 1 0 19 16"/></svg></button>
    <button class="ibtn" data-a="dup" title="Dupliser (Ctrl+D)" aria-label="Dupliser"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3"/></svg></button>
@@ -1804,7 +1820,7 @@ function renderSelbar(){if(selectedItems.size>1){renderMulti();return}const sb=$
     bindSizeEditor(o,'s',()=>{rescaleCustom(p.id,o);renderSelbar()});
     const SHIFT={mm:{10:'cm'},cm:{.1:'mm',10:'dm'},dm:{.1:'cm',10:'m'},m:{.1:'dm'}};
     box.querySelectorAll('[data-x]').forEach(b=>b.onclick=()=>{const x=+b.dataset.x;const to=SHIFT[o.unit]&&SHIFT[o.unit][x];if(to&&o.fit===1){o.unit=to}else{o.fit=(o.fit||1)*x}o.usrc=to&&o.fit===1?'user':'fit';rescaleCustom(p.id,o);renderSelbar()})}
-  if(it.locked)sb.querySelectorAll('input,[data-mnt],[data-od],[data-ot],#applyExactPosition,[data-a=rl],[data-a=rr],[data-a=del],[data-a=size]').forEach(el=>el.disabled=true);sb.querySelectorAll('[data-a]').forEach(b=>b.onclick=e=>{const a=b.dataset.a;if(a==='size'){ui.sizeOpen=!ui.sizeOpen;renderSelbar();return}if(a==='rl')rotate(e.shiftKey?-90:-15);if(a==='rr')rotate(e.shiftKey?90:15);if(a==='dup')duplicate();if(a==='del')remove()})}
+  if(it.locked)sb.querySelectorAll('input,[data-mnt],[data-od],[data-ot],#applyExactPosition,[data-a=rl],[data-a=rr],[data-a=del],[data-a=size],[data-a=tip]').forEach(el=>el.disabled=true);sb.querySelectorAll('[data-a]').forEach(b=>b.onclick=e=>{const a=b.dataset.a;if(it.locked)return;if(a==='tip'){tipModel(p.id);return}if(a==='size'){if(!p.raw){ensureModel(p).then(()=>{ui.sizeOpen=true;renderSelbar()});return}ui.sizeOpen=!ui.sizeOpen;renderSelbar();return}if(a==='rl')rotate(e.shiftKey?-90:-15);if(a==='rr')rotate(e.shiftKey?90:15);if(a==='dup')duplicate();if(a==='del')remove()})}
 function openCtl(it,p){const k=p.open.kind;let h='<div class="vsep"></div>';
   if(k==='window'||k==='opening'){h+=`<label class="hgt">Bredde<span class="num"><input data-od="ow" type="number" min="30" max="800" value="${Math.round(it.ow||p.w)}"><span>cm</span></span></label><label class="hgt">Høyde<span class="num"><input data-od="oh" type="number" min="30" value="${Math.round(it.oh||p.h)}"><span>cm</span></span></label>`;
     if(k==='window')h+=`<label class="hgt">Fra gulv<span class="num"><input data-od="y" type="number" min="0" value="${Math.round(it.y??90)}"><span>cm</span></span></label>`}
@@ -2161,7 +2177,7 @@ resize();buildRoom();syncItems();setMode('3d');renderAll();commit();loop();setup
   recs=recs.filter(r=>!r.archive);const ready=[],old=[];recs.forEach(r=>(r.cv===CV&&r.dims?ready:old).push(r));
   ready.forEach(r=>{if(!r.mount){r.mount=guessMount(r.name);r.flip=false}registerLazy(r)});
   syncItems();renderCatBody();renderSelbar();renderTotals();
-  const startSync=async()=>{const config=await NOVOOI_LIBRARY.config();if(!config.driveConfigured)return;syncDrive(false);setInterval(()=>{if(document.visibilityState==='visible')syncDrive(false)},15*60*1000)};
+  const startSync=async()=>{startCatalogPreviews();const config=await NOVOOI_LIBRARY.config();if(!config.driveConfigured)return;syncDrive(false);setInterval(()=>{if(document.visibilityState==='visible')syncDrive(false)},15*60*1000)};
   if(!old.length){if(!window.NOVOOI_STATIC)setTimeout(startSync,600);return}
   DS.msg=`Klargjør ${old.length} modeller for rask lasting (bare første gang)`;renderDS();let k=0;
   for(const r of old){await yieldUI();k++;try{const a=r.arc&&await IDB.get(r.arc,'arcs');if(!a||!a.buf)continue;const m=await loadModel({buf:a.buf,name:r.fileName,entry:r.entry});
