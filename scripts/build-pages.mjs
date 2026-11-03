@@ -1,3 +1,4 @@
+import {buildMaterials} from './build-materials.mjs';
 import {buildSkp} from './build-skp.mjs';
 import {cp,mkdir,readFile,writeFile,rm} from 'node:fs/promises';
 import path from 'node:path';
@@ -10,3 +11,5 @@ await writeFile(path.join(out,'index.html'),html);await writeFile(path.join(out,
 console.log('Static GitHub Pages bundle: dist-pages (relative assets; no Worker or login required).');
 
 await buildSkp('dist-pages');
+
+await buildMaterials('dist-pages');
