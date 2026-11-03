@@ -71,7 +71,9 @@ Besøkende får lesetilgang til innholdet under den konfigurerte produktmappen g
 
 Katalogen omfatter alle støttede 3D-filer og ZIP-pakker under produktmappen, uansett undermappenavn. Serveren bygger en komplett indeks og lagrer den i R2 i én time. «Synk nå» bygger indeksen på nytt. Feil og ufullstendige søk erstatter aldri en ferdig indeks. Filer utenfor produktmappen filtreres bort, og nedlasting kontrollerer fortsatt filens nåværende plassering.
 
-Nettleseren lagrer katalogen i IndexedDB og gjenbruker den mellom besøk. Filene vises straks i katalogen. Sikre treff mot novooi.com gir butikkens kategori og produktbilde, med en dags lokal hurtigbuffer. Ellers brukes produktnavn og mappe for kategorisering. Manglende modellbilder bygges automatisk i bakgrunnen, med synlige produkter prioritert. Modeller, bilder og originalfiler lagres lokalt. Ukjent kategori vises under Andre produkter. Allerede importerte produkter beholdes når Drive-katalogen endres. Bakgrunnsfremdrift endrer bare statusfeltet, slik at åpne menyer og markeringer beholdes. Bruk «Vis produkter» for å vise en ny katalog etter synk.
+Nettleseren lagrer katalogen i IndexedDB og gjenbruker den mellom besøk. Produkt-ID arves fra nærmeste produktmappe med navn som `65542 (Keeep Your Sofa)`, gjennom alle undermapper. Filnavn, dimensjoner og årstall brukes aldri som produkt-ID. `/api/products` leser eksakte produkt-ID-er fra WooCommerces offentlige Store API med GET. Kategorienes faktiske term-ID-er og navn, produktbilder, attributter og priser brukes direkte; automatisk navnesøk brukes ikke i denne koblingen. Produktdata og variantpriser mellomlagres i R2 i 15 minutter, manglende produkt-ID-er i fem minutter. Variantene pagineres komplett og kontrolleres mot riktig foreldreprodukt. Ingen API-nøkkel med skrivetilgang trengs, og ingen av disse rutene kan skrive til WooCommerce.
+
+Produkter uten gyldig ID eller uten tilgjengelig WooCommerce-produkt samles i en sammenfoldet oversikt over skjulte produktfiler. Tydelige avvik mellom produkt og modellfil, som en transporttralle i en stolmappe, markeres for kontroll og brukes ikke til produktprising. Originalmapper og møbler som allerede ligger i design, slettes ikke. Manglende modellbilder bygges i bakgrunnen. Grupper og kort oppdateres uten å bytte ut søkefelt eller kategorimeny.
 
 SketchUp `.skp` støttes som beta via den fastlåste MIT-pakken OpenSKP. Konvertering til GLB kjører i en separat Web Worker som bygges lokalt med esbuild, inkludert i både Cloudflare- og Pages-bygg. Enkelte SketchUp-versjoner eller modeller kan fortsatt kreve eksport til GLB/OBJ fra SketchUp. Dette er lesesynk/import til produktkatalogen, ikke opplasting av design til Google Drive.
 
@@ -80,6 +82,9 @@ SketchUp `.skp` støttes som beta via den fastlåste MIT-pakken OpenSKP. Konvert
 - `public/`: planleggeren, stilark, logo og lokale 3D-biblioteker.
 - `public/backend.js`: transport og gjennomgang av det felles produktbiblioteket.
 - `worker/drive.mjs`: Google-token, mappeavgrensning og binær nedlasting.
+- `worker/products.mjs`: skrivebeskyttet ID-oppslag, pris- og variantbuffer.
+- `public/catalog-core.js`: felles ID- og kategoriregler.
+- `public/material-pilots.js`: kontrollerte materialsoner og produsentmaterialer for pilotene.
 - `worker/session.mjs`: signerte nettlesersesjoner.
 - `worker/index.ts`: avgrensede API-ruter og statiske filer.
 - `app/api/`: designlagring, deling og tilbakemeldinger. Vanlige funksjoner, ingen rammeverkavhengighet.
@@ -89,3 +94,14 @@ SketchUp `.skp` støttes som beta via den fastlåste MIT-pakken OpenSKP. Konvert
 Tredjepartsbibliotekenes lisenser er bevart i `public/vendor/`. Eksempelmodellene er ikke virkelige NOVOOI-varer og inngår ikke i handlelisten. Serveren har ingen tilgang til lager eller prisgaranti utover det nettbutikkens offentlige API returnerer.
 
 Modellretning: SKP, glTF/GLB og Collada beholder formatets Y-opp-retning. «Vipp modell» retter manuelle unntak og lagrer valget. Veggfesting velger den nærmeste 90-gradersretningen og beregner avstanden ut fra den faktiske siden mot veggen.
+
+## Materialpiloter
+
+`material-pilots.html` viser to gjennomgåtte produkter, med priser og varianter fra WooCommerce:
+
+- **72080, Pavilion AV15:** kroppens frem- og baksider får Kvadrat Vidar 4 / 0333 med produsentens farge-, normal- og matthetskart. Skala: 27,89 × 39,32 cm. Stålunderstellet får ingen tekstiltekstur.
+- **67934, Pavilion AV1:** valnøtt bruker produsentens innebygde Walnut-V-tekstur. Eik, svartlakkert eik og det feilaktige Woo-alternativet «Pavilion AV1» mangler foreløpig verifiserte materialprøver og vises nøytralt. Ingen tilfeldig farge brukes som erstatning.
+
+SKP-konverteringen bevarer komponentnavn og stabile materialnavn. Pilotoppskriftene sjekker produkt-ID, kildefil og faktiske materialsoner før de aktiveres. Eldre lokale konverteringer kan oppgraderes med «Klargjør materialpilot» i produktpanelet. Valgt materiale og produktidentitet følger med i lagrede og delte design.
+
+Materialbildene ligger tapskomprimert/base64-kodet i `assets/` og dekodes med SHA-256-kontroll under bygging til `dist/materials/`. De lastes først når en materialpilot brukes. Dette gjør kildekoden mulig å overføre via GitHubs nettredigerer uten å legge binærdata i JavaScript-bunten. Kilde og fysisk skala finnes i `assets/material-pilots.json` og den bygde `materials/sources.json`. Teksturene er leverandørmateriale, ikke en del av OpenSKPs MIT-lisens.
