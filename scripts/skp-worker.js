@@ -22,4 +22,5 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 import {buildScene,toGLB} from 'openskp';
-self.onmessage=({data})=>{try{const bytes=toGLB(buildScene(data),{textures:true});const glb=bytes.buffer.slice(bytes.byteOffset,bytes.byteOffset+bytes.byteLength);self.postMessage({glb},[glb])}catch(error){self.postMessage({error:String(error.message||error)})}};
+import {annotateSkpGlb} from './skp-export.mjs';
+self.onmessage=({data})=>{try{const scene=buildScene(data);scene.gltfMaterials.forEach((m,i)=>{m.name=m.name||'SKP_material_'+i});const bytes=annotateSkpGlb(toGLB(scene,{textures:true}),scene.glbPrimitives);const glb=bytes.buffer.slice(bytes.byteOffset,bytes.byteOffset+bytes.byteLength);self.postMessage({glb},[glb])}catch(error){self.postMessage({error:String(error.message||error)})}};
