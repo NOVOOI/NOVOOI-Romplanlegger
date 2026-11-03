@@ -17,9 +17,11 @@
  function priceInfo(it,p){
   if(!p)return{amount:0,status:'missing',label:'Modell mangler'};
   if(p.placeholder||!p.custom&&!p.shop)return{amount:0,status:'example',label:'Eksempelvare'};
-  if(p.shop){const s=p.shop,v=(s.vars||[]).find(v=>(s.attrs||[]).every(a=>it.sel?.[a.name]&&v.sel?.[a.name]===it.sel[a.name]));const amount=v?.price??s.min;
+  if(p.shop){const s=p.shop,full=(s.attrs||[]).every(a=>it.sel?.[a.name]),v=full?(s.vars||[]).find(v=>(s.attrs||[]).every(a=>!v.sel?.[a.name]||v.sel[a.name]===it.sel[a.name])):null;
    if(s.cur?.code&&s.cur.code!=='NOK')return{amount:0,status:'missing',label:'Pris i '+s.cur.code};
-   if(finite(amount)&&amount>0)return{amount,status:v?'priced':'estimate',label:v?'Oppgitt variantpris':'Fra-pris · velg variant'};
+   if(full&&s.type==='variable'&&(!s.variantsLoaded||!v||!finite(v.price)))return{amount:0,status:'missing',label:s.variantsLoaded?'Variantpris ikke tilgjengelig':'Henter variantpris'};
+   const amount=v?.price??s.min;if(finite(amount)&&amount>=0)return{amount,status:v||s.type==='simple'?'priced':'estimate',label:v?'Oppgitt variantpris':s.type==='simple'?'Oppgitt produktpris':'Fra-pris · velg variant'};
+   if(s.linkMethod==='folder-id')return{amount:0,status:'missing',label:'Pris ikke tilgjengelig fra nettbutikken'};
   }
   return finite(p.price)&&p.price>0?{amount:p.price,status:'manual',label:'Manuelt oppgitt pris'}:{amount:0,status:'missing',label:'Pris mangler'};
  }
