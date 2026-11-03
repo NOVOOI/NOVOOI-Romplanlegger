@@ -1,3 +1,4 @@
+import '../public/catalog-core.js';
 const FOLDER='application/vnd.google-apps.folder',ALIAS='catalog-root',tokens=new Map(),enc=new TextEncoder();
 export class DriveError extends Error{constructor(code,status=503){super(code);this.code=code;this.status=status}}
 const b64=bytes=>btoa(String.fromCharCode(...new Uint8Array(bytes))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
@@ -23,13 +24,13 @@ export function createDriveService(env,fetcher=fetch){
    // Cache only the configured subtree, never other files visible to the account.
    await allowed(root);
    const digest=await crypto.subtle.digest('SHA-256',enc.encode(root+'|'+account.client_email));
-   const key='catalog/v1/'+Array.from(new Uint8Array(digest),b=>b.toString(16).padStart(2,'0')).join('')+'.json';
+   const key='catalog/v2/'+Array.from(new Uint8Array(digest),b=>b.toString(16).padStart(2,'0')).join('')+'.json';
    let cached;try{cached=await (await env.BUCKET?.get(key))?.json()}catch{}
    if(!refresh&&cached?.at>Date.now()-3600000)return cached;
    const entries=new Map();let pageToken='',pages=0;
    do{if(++pages>35)throw new DriveError('catalog_too_large');const data=await(await google('files',{q:'trashed = false',pageSize:1000,fields:'nextPageToken,incompleteSearch,files(id,name,mimeType,parents,size,modifiedTime)',supportsAllDrives:true,includeItemsFromAllDrives:true,...(pageToken?{pageToken}:{})})).json();if(data.incompleteSearch)throw new DriveError('drive_incomplete_search');for(const f of data.files||[])entries.set(f.id,f);pageToken=data.nextPageToken||''}while(pageToken);
    const place=id=>{const chain=[],seen=new Set();let f=entries.get(id);while(f&&f.id!==root&&chain.length<64&&!seen.has(f.id)){seen.add(f.id);chain.unshift(f);const parent=f.parents?.[0];if(parent===root)return chain;f=entries.get(parent)}return null};
-   const files=[];for(const f of entries.values()){const chain=place(f.id);if(!chain)continue;files.push({...normalize(f),brand:chain.length>1?chain[0].name:'',path:chain.slice(0,-1).map(x=>x.name).join(' / '),technical:chain.slice(0,-1).some(x=>/^tekniske\s+filer$/i.test(x.name.trim()))})}
+   const files=[];for(const f of entries.values()){const chain=place(f.id);if(!chain)continue;files.push({...normalize(f),productId:globalThis.NovooiCatalog.folderProductId(chain.slice(0,-1).map(x=>x.name)),brand:chain.length>1?chain[0].name:'',path:chain.slice(0,-1).map(x=>x.name).join(' / '),technical:chain.slice(0,-1).some(x=>/^tekniske\s+filer$/i.test(x.name.trim()))})}
    const snapshot={files,at:Date.now()};await env.BUCKET?.put(key,JSON.stringify(snapshot),{httpMetadata:{contentType:'application/json'}});return snapshot;
   },
   async status(){const folder=await metadata(root);if(folder.trashed||folder.mimeType!==FOLDER)throw new DriveError('drive_folder_unavailable');return{configured:true,root:ALIAS,title:env.DRIVE_CATALOG_NAME||'4. Brands'}},
