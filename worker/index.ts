@@ -1,6 +1,7 @@
 import * as designs from '../app/api/designs/route';
 import * as share from '../app/api/share/route';
 import * as feedback from '../app/api/feedback/route';
+import {createProductService,ProductError} from './products.mjs';
 import {sessionFor} from './session.mjs';
 import {createDriveService,DriveError} from './drive.mjs';
 type Env={ASSETS:Fetcher;BUCKET:R2Bucket;SESSION_SECRET:string;GOOGLE_SERVICE_ACCOUNT_JSON?:string;DRIVE_ROOT_FOLDER_ID?:string;DRIVE_CATALOG_NAME?:string;DRIVE_MAX_FILE_MB?:string};
@@ -11,6 +12,10 @@ export async function handle(request:Request,env:Env){
  if(path==='/api/drive'){
   if(request.method!=='GET')return json({error:'Method not allowed'},405);
   try{const drive=createDriveService(env);switch(url.searchParams.get('action')){case 'catalog':return json(await drive.catalog(url.searchParams.get('refresh')==='1'));case 'status':return json(await drive.status());case 'list':return json(await drive.list(url.searchParams.get('parent')||'catalog-root',url.searchParams.get('pageToken')||''));case 'metadata':return json(await drive.metadata(url.searchParams.get('id')));case 'download':return await drive.download(url.searchParams.get('id'));default:return json({error:'invalid_action'},400)}}catch(e){return e instanceof DriveError?json({error:e.code,code:e.code},e.status):json({error:'drive_unavailable',code:'drive_unavailable'},503)}
+ }
+ if(path==='/api/products'){
+  if(request.method!=='GET')return json({error:'Method not allowed'},405);
+  try{const service=createProductService(env);return json(url.searchParams.get('variants')==='1'?await service.variants(url.searchParams.get('id')):await service.metadata((url.searchParams.get('ids')||'').split(',')))}catch(e){return e instanceof ProductError?json({error:e.code,code:e.code},e.status):json({error:'products_unavailable'},502)}
  }
  if(path==='/api/shop'){
   if(request.method!=='GET')return json({error:'Method not allowed'},405);
