@@ -1,0 +1,45 @@
+{
+  "sources": [
+    {
+      "material": "Vidar 4 / 0333",
+      "url": "https://www.kvadrat.dk/en/products/upholstery/8484-vidar-4?id=8484:::0333:",
+      "download": "https://kvadratimageresizer.blob.core.windows.net/bynderresources/36E9457A-29C9-426C-924AAE4A882B0A15.zip",
+      "widthM": 0.2789,
+      "heightM": 0.3932,
+      "normal": "+Y",
+      "note": "Produsentens PBR-kart, optimalisert til 1024 piksler p\u00e5 lengste side."
+    },
+    {
+      "material": "Walnut-V",
+      "source": "&Tradition Pavilion AV1, innebygd leverand\u00f8rtekstur i Drive-filen",
+      "widthM": 0.3048,
+      "heightM": 0.3048
+    }
+  ],
+  "assets": [
+    {
+      "file": "pavilion-walnut.jpg",
+      "sha256": "5610badb21cf05b3cc9fbcdb159d178da3819c0ade326e347cc11e2bf906909e",
+      "bytes": 490425,
+      "payload": "pavilion-walnut.json"
+    },
+    {
+      "file": "vidar-0333-color.jpg",
+      "sha256": "f2d399eea3a344ed9c3e69989a81c5af0f6bb289e7b428fecddfea12cfb2a479",
+      "bytes": 335388,
+      "payload": "vidar-0333-color.json"
+    },
+    {
+      "file": "vidar-0333-roughness.jpg",
+      "sha256": "74e48f6add0e5ed6ef5a2f6f1ca31a81ba272f6717d532445eb40ec3955f8c59",
+      "bytes": 288804,
+      "payload": "vidar-0333-roughness.json"
+    },
+    {
+      "file": "vidar-0333-normal.jpg",
+      "sha256": "ed5f970e7fbf6c99f12ec6a6e5946038cfe22ca851fc095ec3519fe25e2be3b3",
+      "bytes": 431522,
+      "payload": "vidar-0333-normal.json"
+    }
+  ]
+}
