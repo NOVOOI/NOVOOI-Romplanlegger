@@ -1,0 +1,12 @@
+/* Shared, side-effect-free catalog rules. No network or storefront writes. */
+(function(root){
+ const positiveId=value=>{const n=Number(value);return Number.isSafeInteger(n)&&n>0&&n<=2147483647?n:0};
+ function folderProductId(path){const folders=Array.isArray(path)?path:String(path||'').split(/\s+\/\s+/);for(let i=folders.length-1;i>=0;i--){const name=String(folders[i]||'').trim(),m=name.match(/^([1-9]\d{0,8})\s*\([^)]*[A-Za-zÆØÅæøå][^)]*\)\s*$/)||name.match(/^(?:produkt|product)[\s_-]*(?:id)?\s*[:#_-]?\s*([1-9]\d{0,8})(?:\s|$)/i);if(m)return positiveId(m[1])}return 0}
+ function modelReview(file,product){const title=String(file?.title||''),name=String(product?.name||'');for(const words of [/cushion|pute/i,/trolley|tralle/i,/footrest|fotskammel/i])if(words.test(title)&&!words.test(name))return 'Modellfilen ser ut til å være en del eller et tilbehør, ikke hele produktet.';const codes=value=>[...String(value).toUpperCase().replace(/[_-]/g,' ').matchAll(/\bAV[ _-]?(\d{1,3})\b/g)].map(m=>'AV'+m[1]),source=codes(title),target=codes(name);if(source.length&&target.length&&!source.some(c=>target.includes(c)))return 'Modellnummeret i filnavnet avviker fra produktet i WooCommerce.';const numbers=value=>[...String(value).replace(/[_-]/g,' ').matchAll(/\b(\d{4})\b/g)].map(m=>m[1]).filter(n=>+n<1900||+n>2099);const a=numbers(title),b=numbers(name);if(a.length&&b.length&&!a.some(n=>b.includes(n)))return 'Modellnummeret i filnavnet avviker fra produktet i WooCommerce.';return ''}
+ const visibleFile=f=>f?.linkStatus==='linked'&&!f.modelReview;
+ const productId=file=>positiveId(file?.productId)||folderProductId(file?.path);
+ const categories=product=>(product?.categories||[]).filter(c=>positiveId(c.id)).map(c=>({id:positiveId(c.id),name:String(c.name||'').replace(/&amp;/g,'&'),slug:String(c.slug||'')}));
+ function categoryOptions(files){const values=new Map();for(const f of files||[])if(f.linkStatus==='linked')for(const c of f.categories||[])values.set(c.id,c);return [...values.values()].sort((a,b)=>a.name.localeCompare(b.name,'nb'))}
+ function matchesCategory(item,key){if(!String(key).startsWith('wc:'))return item.cat===key;return (item.categories||item.rec?.catalogCategories||item.shop?.categories||[]).some(c=>Number(c.id)===Number(String(key).slice(3)))}
+ root.NovooiCatalog=Object.freeze({positiveId,folderProductId,productId,modelReview,visibleFile,categories,categoryOptions,matchesCategory});
+})(globalThis);
