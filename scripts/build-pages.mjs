@@ -1,3 +1,4 @@
+import {buildBrand} from './build-brand.mjs';
 import {buildMaterials} from './build-materials.mjs';
 import {buildSkp} from './build-skp.mjs';
 import {cp,mkdir,readFile,writeFile,rm} from 'node:fs/promises';
@@ -13,3 +14,5 @@ console.log('Static GitHub Pages bundle: dist-pages (relative assets; no Worker 
 await buildSkp('dist-pages');
 
 await buildMaterials('dist-pages');
+
+await buildBrand('dist-pages');
