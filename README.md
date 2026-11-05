@@ -128,3 +128,7 @@ Møbler og grupper kan dras mellom rom: en gyldig plassering på den andre siden
 - Standard dører og vinduer har rene navn, og vises som vanlige byggeelementer uten placeholder-merke. Modellmål er utvendige karmmål, mens produktnavn bruker modulstørrelse. Enkeltinnerdør M9×21 er 88,6×208,9 cm; vindu M12×12 er 118,8×118,8 cm. Egne mål kan fortsatt redigeres på vinduer.
 
 DWG-leseren bruker `@mlightcad/libredwg-web` 0.8.4 og LibreDWG under GPL-3.0. Bygget inkluderer lisens og kildehenvisning i `vendor/`. Adapterens kildekode ligger i `scripts/dwg-extract.mjs` og `scripts/dwg-worker.js`. Three.js-leserne følger eksisterende MIT-lisens; VTK-leseren har en liten retting for gyldige filer kortere enn 250 byte.
+
+### 1.5.1 · 5. november 2026
+
+Produkter med én modell starter plassering ved ett klikk på produktkortet. ZIP-arkiver undersøkes først: én unik modell importeres og går rett til plassering, mens flere modeller fortsatt gir et filvalg. Importerte duplikater telles ikke som nye filalternativer. Et eksplisitt valg av modell i et arkiv starter også plassering direkte.
