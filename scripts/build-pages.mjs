@@ -1,3 +1,4 @@
+import {buildDwg} from './build-dwg.mjs';
 import {buildBrand} from './build-brand.mjs';
 import {buildMaterials} from './build-materials.mjs';
 import {buildSkp} from './build-skp.mjs';
@@ -16,3 +17,5 @@ await buildSkp('dist-pages');
 await buildMaterials('dist-pages');
 
 await buildBrand('dist-pages');
+
+await buildDwg('dist-pages');
