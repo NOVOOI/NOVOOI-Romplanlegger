@@ -1,2 +1,8 @@
 @font-face{font-family:Season Sans;src:url("fonts/season-sans-regular.woff2") format("woff2");font-weight:400;font-display:swap}@font-face{font-family:Season Sans;src:url("fonts/season-sans-medium.woff2") format("woff2");font-weight:500 600;font-display:swap}@font-face{font-family:Season Sans;src:url("fonts/season-sans-bold.woff2") format("woff2");font-weight:700 900;font-display:swap}@font-face{font-family:Gazpacho;src:url("fonts/gazpacho-regular.woff") format("woff");font-weight:400;font-display:swap}:root{--f-body:"Season Sans",sans-serif;--f-mono:var(--f-body);--f-display:var(--f-body)}body,input,select,textarea,button,h2,h3,h4,h5,h6{font-family:"Season Sans",sans-serif}h1{font-family:Gazpacho,"Season Sans",sans-serif;font-weight:400}
 body *{font-family:"Season Sans",sans-serif!important}body h1{font-family:Gazpacho,"Season Sans",sans-serif!important}
+
+/* Branded pointing cursors; retain native text, drag and resize affordances. */
+body{cursor:url("cursor-arrow.svg") 5 3,auto}
+button,a[href],summary,[role="button"],input[type="checkbox"],input[type="radio"],select,.card,.file-choice,.drow,.btnchip{cursor:url("cursor-hand.svg") 12 3,pointer!important}
+button:disabled,input:disabled,select:disabled,[aria-disabled="true"]{cursor:not-allowed!important}
+input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),textarea,[contenteditable="true"]{cursor:text}
