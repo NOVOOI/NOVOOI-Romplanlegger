@@ -1,0 +1,2 @@
+import {readFile,mkdir,writeFile} from 'node:fs/promises';import {createHash} from 'node:crypto';
+export async function buildBrand(out){await mkdir(out+'/fonts',{recursive:true});for(const a of JSON.parse(await readFile('assets/brand-fonts.json','utf8'))){if(!/^[a-z-]+\.woff2?$/.test(a.file))throw Error('Invalid font path');const b=Buffer.from(a.base64,'base64');if(createHash('sha256').update(b).digest('hex')!==a.sha256)throw Error('Invalid font');await writeFile(out+'/fonts/'+a.file,b)}}
