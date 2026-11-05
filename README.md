@@ -105,3 +105,13 @@ Modellretning: SKP, glTF/GLB og Collada beholder formatets Y-opp-retning. «Vipp
 SKP-konverteringen bevarer komponentnavn og stabile materialnavn. Pilotoppskriftene sjekker produkt-ID, kildefil og faktiske materialsoner før de aktiveres. Eldre lokale konverteringer kan oppgraderes med «Klargjør materialpilot» i produktpanelet. Valgt materiale og produktidentitet følger med i lagrede og delte design.
 
 Materialbildene ligger tapskomprimert/base64-kodet i `assets/` og dekodes med SHA-256-kontroll under bygging til `dist/materials/`. De lastes først når en materialpilot brukes. Dette gjør kildekoden mulig å overføre via GitHubs nettredigerer uten å legge binærdata i JavaScript-bunten. Kilde og fysisk skala finnes i `assets/material-pilots.json` og den bygde `materials/sources.json`. Teksturene er leverandørmateriale, ikke en del av OpenSKPs MIT-lisens.
+
+## Produktkort og modulsofaer (1.4)
+
+Katalogen grupperer 3D-filer per WooCommerce-produkt. Filformat og modul velges under produktkortet. Identiske Drive-filer skjules med produktavgrenset MD5 når tilgjengelig; ZIP-innhold sammenlignes med CRC, størrelse og format. Andre formater beholdes som alternativer. Originalfiler og plasserte kopier slettes ikke.
+
+Modulvalg henter en matchende modell fra samme produkt-ID og foretrekker formatet som allerede brukes. Norske og engelske modulnavn støttes. Uklare navn kan kobles manuelt i «Modellfiler for moduler» i produktpanelet. Denne koblingen lagres på enheten. Modulbytte bevarer posisjon, rotasjon og øvrige variantvalg. Shift-klikk på produkter fra samme WooCommerce-produkt gir felles variantvalg; modulvalget beholdes individuelt. Nye modeller kontrolleres mot innervegger før byttet utføres.
+
+Rommets aktive modeller gjenopprettes før katalogens bakgrunnsforhåndsvisninger. Solide innervegger bruker orienterte kollisjonsbokser, også ved endene. Alt slår av snapping, men tillater ikke plassering inni vegger.
+
+Season Sans og Gazpacho er levert av NOVOOI og pakkes som separate fontfiler ved bygging. Fontene og NOVOOI-symbolene omfattes ikke av tredjeparts kode-lisenser. Season Sans brukes i hele grensesnittet, Gazpacho kun på H1. Innstillinger → Versjonshistorikk viser en kort oversikt over tidligere endringer og gjeldende versjon. De historiske versjonene 1.0–1.3 grupperer arbeidet før versjonsnummer ble innført i grensesnittet.
