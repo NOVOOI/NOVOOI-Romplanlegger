@@ -115,3 +115,16 @@ Modulvalg henter en matchende modell fra samme produkt-ID og foretrekker formate
 Rommets aktive modeller gjenopprettes før katalogens bakgrunnsforhåndsvisninger. Solide innervegger bruker orienterte kollisjonsbokser, også ved endene. Alt slår av snapping, men tillater ikke plassering inni vegger.
 
 Season Sans og Gazpacho er levert av NOVOOI og pakkes som separate fontfiler ved bygging. Fontene og NOVOOI-symbolene omfattes ikke av tredjeparts kode-lisenser. Season Sans brukes i hele grensesnittet, Gazpacho kun på H1. Innstillinger → Versjonshistorikk viser en kort oversikt over tidligere endringer og gjeldende versjon. De historiske versjonene 1.0–1.3 grupperer arbeidet før versjonsnummer ble innført i grensesnittet.
+
+### 1.4.1 – flytting og tydeligere kontroller
+
+Møbler og grupper kan dras mellom rom: en gyldig plassering på den andre siden av en innervegg godtas direkte. Hvis målet treffer veggen, stoppes møbelet før overlapping oppstår. Det kreves ingen åpning eller gangvei for å flytte møbler mellom rom. Kontrollknappene bruker samme avrunding som resten av grensesnittet. Nedtrekksmenyen har faste kolonner for ikoner og navn. Tilpassede SVG-pekere leveres lokalt; tekst- og draredigering beholder passende systempekere. Versjonshistorikken inneholder også korte bruksforklaringer.
+
+### 1.5.0 · 5. november 2026
+
+- DWG-import med LibreDWG i en separat nettleserprosess. Leser polyface-/polygonmesher, 3D-flater og blokktransformasjoner med tegningens enhet. Testet med fem Arena-filer fra LK Hjelle. DWG med ACIS-solider (blant annet Falcon-filene som ble testet) krever fortsatt eksport; vi viser ingen ufullstendig modell som om den var komplett.
+- Nye, utsatt lastede lesere for PLY, 3MF, AMF og VTK. Eksisterende SKP, IFC, DXF, STEP/IGES, Rhino, GLB/glTF, FBX, OBJ, 3DS, DAE og STL beholdes. DXF må inneholde 3D-geometri. ZIP kan inneholde flere modeller og underarkiver.
+- Arkiver med RVT/RFA, NWD/NWC eller Archicad LCF/GSM viser hvilke formater de inneholder og tilbyr alternative filer fra samme produkt. Disse proprietære formatene krever eksport fra originalprogrammet; ingen modell sendes til en ekstern konverteringstjeneste.
+- Standard dører og vinduer har rene navn, og vises som vanlige byggeelementer uten placeholder-merke. Modellmål er utvendige karmmål, mens produktnavn bruker modulstørrelse. Enkeltinnerdør M9×21 er 88,6×208,9 cm; vindu M12×12 er 118,8×118,8 cm. Egne mål kan fortsatt redigeres på vinduer.
+
+DWG-leseren bruker `@mlightcad/libredwg-web` 0.8.4 og LibreDWG under GPL-3.0. Bygget inkluderer lisens og kildehenvisning i `vendor/`. Adapterens kildekode ligger i `scripts/dwg-extract.mjs` og `scripts/dwg-worker.js`. Three.js-leserne følger eksisterende MIT-lisens; VTK-leseren har en liten retting for gyldige filer kortere enn 250 byte.
