@@ -1,3 +1,4 @@
+import {buildDwg} from './build-dwg.mjs';
 import {buildBrand} from './build-brand.mjs';
 import {buildMaterials} from './build-materials.mjs';
 import {buildSkp} from './build-skp.mjs';
@@ -9,3 +10,5 @@ await buildSkp('dist');
 await buildMaterials('dist');
 
 await buildBrand('dist');
+
+await buildDwg('dist');
