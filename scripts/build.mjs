@@ -1,3 +1,4 @@
+import {buildBrand} from './build-brand.mjs';
 import {buildMaterials} from './build-materials.mjs';
 import {buildSkp} from './build-skp.mjs';
 import {cp,mkdir,rm,readFile,writeFile} from 'node:fs/promises';
@@ -6,3 +7,5 @@ await rm('dist',{recursive:true,force:true});await mkdir('dist',{recursive:true}
 await buildSkp('dist');
 
 await buildMaterials('dist');
+
+await buildBrand('dist');
