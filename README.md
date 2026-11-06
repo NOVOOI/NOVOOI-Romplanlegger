@@ -132,3 +132,7 @@ DWG-leseren bruker `@mlightcad/libredwg-web` 0.8.4 og LibreDWG under GPL-3.0. By
 ### 1.5.1 · 5. november 2026
 
 Produkter med én modell starter plassering ved ett klikk på produktkortet. ZIP-arkiver undersøkes først: én unik modell importeres og går rett til plassering, mens flere modeller fortsatt gir et filvalg. Importerte duplikater telles ikke som nye filalternativer. Et eksplisitt valg av modell i et arkiv starter også plassering direkte.
+
+### 1.5.2 · 6. november 2026
+
+Romplanleggerens NOVOOI-favicon har en liten gul prikk (#EEFC9B) øverst til høyre, for å skille fanen fra nettbutikken. Favicon-lenken er versjonert for å oppdatere tidligere mellomlagrede ikoner.
