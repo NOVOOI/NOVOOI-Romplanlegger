@@ -136,3 +136,11 @@ Produkter med én modell starter plassering ved ett klikk på produktkortet. ZIP
 ### 1.5.2 · 6. november 2026
 
 Romplanleggerens NOVOOI-favicon har en liten gul prikk (#EEFC9B) øverst til høyre, for å skille fanen fra nettbutikken. Favicon-lenken er versjonert for å oppdatere tidligere mellomlagrede ikoner.
+
+### 1.6.0 · 6. november 2026
+
+Et felles materialbibliotek brukes på hele modellen, uavhengig av filtype og originale materialnavn. Velg et møbel og deretter en prøve under **Materialbibliotek**. Shift-marker flere møbler og bruk **Materiale på alle valgte** for samme overflate på hele gruppen. **Original** gjenoppretter modellens tidligere materialvalg.
+
+Biblioteket starter med ni materialer: ekte Kvadrat Vidar 333 og leverandørens valnøtt-tekstur, tre generiske stoffarger, generisk lys eik, matt sort, matt hvit og krom. Generiske materialer er illustrasjoner og er tydelig merket. Prøver, kilde og egenskaper defineres ett sted i `public/surface-library.js`, som deles av alle brukere og produkter. Teksturer har fast fysisk størrelse og automatisk projeksjon, slik at også grå modeller uten UV-koordinater kan brukes.
+
+Material-ID lagres per objekt i designet, beholdes ved modulbytte, duplisering, eksport og gjenåpning. Originalfilene endres ikke. Visningsmaterialet endrer ikke WooCommerce-variant, tilgjengelighet eller pris. Det er foreløpig et manuelt visningsvalg, ikke automatisk matching av alle nettbutikktekstiler. Materialsoner og den tidligere soneeditoren er skjult i produktpanelet i denne førsteutgaven.
