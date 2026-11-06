@@ -1,0 +1,202 @@
+{
+  "sources": [
+    {
+      "id": "oak_veneer_01",
+      "name": "Oak Veneer 01",
+      "url": "https://polyhaven.com/a/oak_veneer_01",
+      "license": "CC0",
+      "tile": [
+        1.8300000429153442,
+        1.8300000429153442
+      ]
+    },
+    {
+      "id": "white_oak_veneer",
+      "name": "White Oak Veneer",
+      "url": "https://polyhaven.com/a/white_oak_veneer",
+      "license": "CC0",
+      "tile": [
+        0.5,
+        0.5
+      ]
+    },
+    {
+      "id": "black_oak_veneer",
+      "name": "Black Oak Veneer",
+      "url": "https://polyhaven.com/a/black_oak_veneer",
+      "license": "CC0",
+      "tile": [
+        1,
+        1
+      ]
+    },
+    {
+      "id": "ash_veneer",
+      "name": "Ash Veneer",
+      "url": "https://polyhaven.com/a/ash_veneer",
+      "license": "CC0",
+      "tile": [
+        1,
+        1
+      ]
+    },
+    {
+      "id": "cherry_veneer",
+      "name": "Cherry Veneer",
+      "url": "https://polyhaven.com/a/cherry_veneer",
+      "license": "CC0",
+      "tile": [
+        1,
+        1
+      ]
+    },
+    {
+      "id": "teak_veneer",
+      "name": "Teak Veneer",
+      "url": "https://polyhaven.com/a/teak_veneer",
+      "license": "CC0",
+      "tile": [
+        1,
+        1
+      ]
+    },
+    {
+      "id": "smoked_walnut_veneer",
+      "name": "Smoked Walnut Veneer",
+      "url": "https://polyhaven.com/a/smoked_walnut_veneer",
+      "license": "CC0",
+      "tile": [
+        1,
+        1
+      ]
+    }
+  ],
+  "assets": [
+    {
+      "file": "oak-veneer-01-color.jpg",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/oak_veneer_01/oak_veneer_01_diff_1k.jpg",
+      "bytes": 641756,
+      "sha256": "c14681f72f59f17bff568cae7a837641443b607b899f0c279cd64a5638f877a7"
+    },
+    {
+      "file": "oak-veneer-01-normal.jpg",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/oak_veneer_01/oak_veneer_01_nor_gl_1k.jpg",
+      "bytes": 484844,
+      "sha256": "1297acf7b4476d5ccd83cc8b27be96aa6110f7a9c3a40be0bd767bf81b17db01"
+    },
+    {
+      "file": "oak-veneer-01-roughness.jpg",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/oak_veneer_01/oak_veneer_01_rough_1k.jpg",
+      "bytes": 865194,
+      "sha256": "ca2af5649b628ef05f196793d68cdca874c12ceb6e9ae566976546d9dd5a2604"
+    },
+    {
+      "file": "white-oak-veneer-color.jpg",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/white_oak_veneer/white_oak_veneer_diff_1k.jpg",
+      "bytes": 595257,
+      "sha256": "8fdec14fd3c06de907693c9c3241037dc93327ad907296371a2f74a0becd8187"
+    },
+    {
+      "file": "white-oak-veneer-normal.jpg",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/white_oak_veneer/white_oak_veneer_nor_gl_1k.jpg",
+      "bytes": 623607,
+      "sha256": "9e8dd65e443d92107caa4cd30403d78946a8b8c5a6029e6446c7368865b1d1c0"
+    },
+    {
+      "file": "white-oak-veneer-roughness.jpg",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/white_oak_veneer/white_oak_veneer_rough_1k.jpg",
+      "bytes": 520649,
+      "sha256": "a8670e80f203bd031ac3c80f0f606383be51a0ee108e016fa19cad6b9bd373e7"
+    },
+    {
+      "file": "black-oak-veneer-color.jpg",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/black_oak_veneer/black_oak_veneer_diff_1k.jpg",
+      "bytes": 580236,
+      "sha256": "7893f9bfeda626364f0a803dea6327c9f3a7b2f2fe330f6b4f326f6b06c0c265"
+    },
+    {
+      "file": "black-oak-veneer-normal.jpg",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/black_oak_veneer/black_oak_veneer_nor_gl_1k.jpg",
+      "bytes": 390277,
+      "sha256": "3073677e6adba6ac9e205d2b1eebdb0e2153a119c0a358b30bc5dcbb0ecfd7ec"
+    },
+    {
+      "file": "black-oak-veneer-roughness.jpg",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/black_oak_veneer/black_oak_veneer_rough_1k.jpg",
+      "bytes": 565446,
+      "sha256": "c2b17b90ebc600d5d2512437d8506028306ba37c5785ab09031058f7208e2306"
+    },
+    {
+      "file": "ash-veneer-color.jpg",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/ash_veneer/ash_veneer_diff_1k.jpg",
+      "bytes": 592273,
+      "sha256": "13fd87c8b0a5cc1d4e408fb75b3eb629417ea6b1aaf1672b5adf993640486673"
+    },
+    {
+      "file": "ash-veneer-normal.jpg",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/ash_veneer/ash_veneer_nor_gl_1k.jpg",
+      "bytes": 397524,
+      "sha256": "824898e187fb1d701b36a898ecd736a0464f49fa46233a35592e1ed9348e7fc4"
+    },
+    {
+      "file": "ash-veneer-roughness.jpg",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/ash_veneer/ash_veneer_rough_1k.jpg",
+      "bytes": 797439,
+      "sha256": "0857c5e1db0c265d1d04c9451041f55b78cc7613d44caf42c7c9cd449e72d835"
+    },
+    {
+      "file": "cherry-veneer-color.jpg",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/cherry_veneer/cherry_veneer_diff_1k.jpg",
+      "bytes": 485750,
+      "sha256": "d50fed9f9964721d6b18581cadb6d95717a714b85361b22078e7d913ba5ce4d2"
+    },
+    {
+      "file": "cherry-veneer-normal.jpg",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/cherry_veneer/cherry_veneer_nor_gl_1k.jpg",
+      "bytes": 288037,
+      "sha256": "d2c722c80651e7c1074d46f27c18a78de5bce9ced1c8afc82ea3aa555555e57a"
+    },
+    {
+      "file": "cherry-veneer-roughness.jpg",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/cherry_veneer/cherry_veneer_rough_1k.jpg",
+      "bytes": 522104,
+      "sha256": "25dc671f72a5c78c2fec855b95a009d1c948a9616007887a653c2c695ee1b7a6"
+    },
+    {
+      "file": "teak-veneer-color.jpg",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/teak_veneer/teak_veneer_diff_1k.jpg",
+      "bytes": 612194,
+      "sha256": "ba501180029ec8804e430177e4d67446da23a3be4d5dbad94a498de070324275"
+    },
+    {
+      "file": "teak-veneer-normal.jpg",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/teak_veneer/teak_veneer_nor_gl_1k.jpg",
+      "bytes": 410625,
+      "sha256": "e2cd5aa363feea0bb1fd5c682f9b28c9810def07621915a413a834fafd57c851"
+    },
+    {
+      "file": "teak-veneer-roughness.jpg",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/teak_veneer/teak_veneer_rough_1k.jpg",
+      "bytes": 731629,
+      "sha256": "cb8a09ae509a4c89df998fc14e1deb0c623615bf2f480af78d561d8536972db0"
+    },
+    {
+      "file": "smoked-walnut-veneer-color.jpg",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/smoked_walnut_veneer/smoked_walnut_veneer_diff_1k.jpg",
+      "bytes": 534484,
+      "sha256": "711773a3f4eb37a5abf073e150b5f570f49b46a8b6f506781b22d54cdf8793c0"
+    },
+    {
+      "file": "smoked-walnut-veneer-normal.jpg",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/smoked_walnut_veneer/smoked_walnut_veneer_nor_gl_1k.jpg",
+      "bytes": 366348,
+      "sha256": "e1aea3ac8d2d78170025fc24e1a594115dfb184f148ea1b4edf0d05a59dc331a"
+    },
+    {
+      "file": "smoked-walnut-veneer-roughness.jpg",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/smoked_walnut_veneer/smoked_walnut_veneer_rough_1k.jpg",
+      "bytes": 408443,
+      "sha256": "a83e636322d1e71cbe530a70b7f194533bd02d7ee357e685db99a9019bfcc6a4"
+    }
+  ]
+}
