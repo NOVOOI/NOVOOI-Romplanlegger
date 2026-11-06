@@ -144,3 +144,13 @@ Et felles materialbibliotek brukes på hele modellen, uavhengig av filtype og or
 Biblioteket starter med ni materialer: ekte Kvadrat Vidar 333 og leverandørens valnøtt-tekstur, tre generiske stoffarger, generisk lys eik, matt sort, matt hvit og krom. Generiske materialer er illustrasjoner og er tydelig merket. Prøver, kilde og egenskaper defineres ett sted i `public/surface-library.js`, som deles av alle brukere og produkter. Teksturer har fast fysisk størrelse og automatisk projeksjon, slik at også grå modeller uten UV-koordinater kan brukes.
 
 Material-ID lagres per objekt i designet, beholdes ved modulbytte, duplisering, eksport og gjenåpning. Originalfilene endres ikke. Visningsmaterialet endrer ikke WooCommerce-variant, tilgjengelighet eller pris. Det er foreløpig et manuelt visningsvalg, ikke automatisk matching av alle nettbutikktekstiler. Materialsoner og den tidligere soneeditoren er skjult i produktpanelet i denne førsteutgaven.
+
+### 1.7.0 · 6. november 2026
+
+Materialpanelet viser bare produktets egne materialalternativer fra WooCommerce. Primært trekk/tekstil prioriteres på polstrede produkter; treverk og overflater brukes på bord. Modulvalg, størrelser og andre egenskaper blir ikke materialprøver. Alternativene filtreres mot de faktiske variantkombinasjonene. Et klikk på en materialprøve velger samme nettbutikkattributt, oppdaterer prisen og bruker materialet på hele modellen. Vanlig variantvalg oppdaterer også materialet. Ved flervalg vises bare felles materialvarianter.
+
+Biblioteket har 40 materialgrunnlag og lager produktspesifikke prøver fra de reelle variantnavnene. Det omfatter treverk, tekstil, skinn, metaller, ensfargede overflater, stein og glass. Ukjente materialkoder gis ingen oppdiktet farge: de vises nøytralt eller med tydelig merket tilnærming. Produktspesifikk farge-/tekstilnøyaktighet krever fortsatt produsentens materialprøve.
+
+Generert eik er erstattet med fotografisk PBR-referanse. Eik, hvitoljet eik, sort eik, ask, kirsebær, teak og røkt valnøtt har CC0-teksturer fra Poly Haven, med dokumentert fysisk størrelse og svakere normalstyrke. Eksisterende Vidar 333 og valnøtt beholdes. Referanser er ikke produsentverifiserte overflater for hvert enkelt møbel.
+
+`assets/surface-textures.json` registrerer 21 bildefiler, kilde, størrelse og SHA-256. Bygget henter dem fra Poly Havens faste nedlastingsadresser, verifiserer innholdet, mellomlagrer lokalt og publiserer dem som egne Cloudflare-ressurser. Første bygg trenger nettverk; nettleseren laster bare bildene til valgte materialer. Kilder og CC0-lisensinformasjon publiseres i `materials/surface-sources.json`.
