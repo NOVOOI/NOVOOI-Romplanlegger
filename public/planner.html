@@ -2255,10 +2255,57 @@ function dsyncView(list,q,cardHtml){const groups=groupedCatalog(list,q);return s
  const fileRows=g.files.filter(f=>fileIds.has(f.id)).map(f=>{
    const model=g.models.find(p=>p.rec?.drive===f.id&&p.rec?.thumb);
    const archive=extOf(f.title)==='zip';
-   const preview=!archive&&model?.rec.thumb;
+   const current=ARCS.get(f.id)?.mod===f.mod;
+   const preview=!archive&&(directPreviews.get(directPreviewKey(f))?.thumb||(current&&model?.rec.thumb));
    return `<button class="file-choice" data-file-choice="${esc(f.id)}"><span class="file-format">${esc(extOf(f.title).toUpperCase())}</span><span><b>${esc(prettyName(f.title))}</b><small>${archive?'Se modellene i arkivet':'Last inn og plasser'}</small></span>${preview?variantThumbnail(preview):''}<span aria-hidden="true">${archive?'›':'↓'}</span></button>`;
  });return `<section class="bgrp product-family"><details data-product-group="${esc(g.key)}" ${!single&&ui.openProducts?.has(g.key)?'open':''}><summary ${single?`data-single-${single.pid?'p':'file'}="${esc(single.pid||single.file)}" title="Plasser ${esc(g.name)}"`:''}><span class="product-photo">${image?`<img loading="lazy" alt="" src="${esc(image)}">`:''}</span><span><small>${esc(g.brand)}</small><b>${esc(g.name)}</b></span><span class="family-chevron" aria-hidden="true">${single?'＋':'⌄'}</span></summary><div class="product-files">${rows.map(p=>`<button class="file-choice" draggable="true" data-p="${esc(p.id)}" title="Plasser ${esc(p.name)}"><span class="file-format">${esc((NovooiWorkspace.format(p.rec?.entry||p.rec?.fileName)||'3D').toUpperCase())}</span><span><b>${esc(prettyName(p.rec?.entry||p.name))}</b><small>${fmtProductCm(p.w,p)} × ${fmtProductCm(p.d,p)} × ${fmtProductCm(p.h,p)} cm</small></span>${variantThumbnail(p.rec?.thumb||thumb(p.id))}<span aria-hidden="true">＋</span></button>`).join('')}${fileRows.join('')}</div></details>${shopLink(storeUrl, 'btn pbtn family-shop-link')}</section>`}).join('')+(groups.length?'':'<p class="empty">Ingen produkter i denne kategorien.</p>')+inactiveCatalog()}
-function bindProductGroups(root){root.querySelectorAll('.file-choice[data-p]').forEach(b=>{b.onclick=()=>beginPlacement(b.dataset.p);b.ondragstart=e=>{e.dataTransfer.setData('text/plain',b.dataset.p);e.dataTransfer.effectAllowed='copy';beginPlacement(b.dataset.p)}});root.querySelectorAll('[data-product-group]').forEach(el=>{const summary=el.querySelector('summary');if(summary?.dataset.singleP||summary?.dataset.singleFile)summary.onclick=async event=>{event.preventDefault();if(summary.getAttribute('aria-busy')==='true')return;if(summary.dataset.singleP){beginPlacement(summary.dataset.singleP);return}summary.setAttribute('aria-busy','true');try{await chooseProductFile(summary.dataset.singleFile,{place:true})}finally{summary.removeAttribute('aria-busy')}};el.ontoggle=()=>{ui.openProducts=ui.openProducts||new Set();el.open?ui.openProducts.add(el.dataset.productGroup):ui.openProducts.delete(el.dataset.productGroup)}});root.querySelectorAll('[data-file-choice]').forEach(b=>b.onclick=()=>chooseProductFile(b.dataset.fileChoice))}
+function bindProductGroups(root){root.querySelectorAll('.file-choice[data-p]').forEach(b=>{b.onclick=()=>beginPlacement(b.dataset.p);b.ondragstart=e=>{e.dataTransfer.setData('text/plain',b.dataset.p);e.dataTransfer.effectAllowed='copy';beginPlacement(b.dataset.p)}});root.querySelectorAll('[data-product-group]').forEach(el=>{const summary=el.querySelector('summary');if(summary?.dataset.singleP||summary?.dataset.singleFile)summary.onclick=async event=>{event.preventDefault();if(summary.getAttribute('aria-busy')==='true')return;if(summary.dataset.singleP){beginPlacement(summary.dataset.singleP);return}summary.setAttribute('aria-busy','true');try{await chooseProductFile(summary.dataset.singleFile,{place:true})}finally{summary.removeAttribute('aria-busy')}};el.ontoggle=()=>{ui.openProducts=ui.openProducts||new Set();el.open?ui.openProducts.add(el.dataset.productGroup):ui.openProducts.delete(el.dataset.productGroup);if(el.open)previewDirectFiles(el)};
+ if(el.open)previewDirectFiles(el);
+ });root.querySelectorAll('[data-file-choice]').forEach(b=>b.onclick=()=>chooseProductFile(b.dataset.fileChoice))}
+// Check loose model files when their product is expanded, using the same parser as ZIP variants.
+const directPreviews=new Map(), directPreviewLoads=new Map();
+const directPreviewKey=f=>f.id+'|'+fileRevision(f);
+async function previewDirectFiles(details){
+  for(const button of details.querySelectorAll('[data-file-choice]')){
+    if(!details.open||!button.isConnected)return;
+    if(button.querySelector('.variant-thumb'))continue;
+    const f=DS.index.find(file=>file.id===button.dataset.fileChoice);
+    if(!f||extOf(f.title)==='zip'||driveFileHidden(f))continue;
+    const key=directPreviewKey(f);
+    let task=directPreviewLoads.get(key);
+    if(!task){
+      task=loadDirectPreview(f,key).finally(()=>directPreviewLoads.delete(key));
+      directPreviewLoads.set(key,task);
+    }
+    const record=await task;
+    if(record?.thumb&&button.isConnected&&!button.querySelector('.variant-thumb')){
+      button.lastElementChild.insertAdjacentHTML('beforebegin',variantThumbnail(record.thumb));
+    }
+  }
+}
+async function loadDirectPreview(f,key){
+  if(directPreviews.has(key))return directPreviews.get(key);
+  const revision=fileRevision(f),cacheId='direct-preview-v1-'+f.id;
+  try{
+    const saved=revision&&await IDB.get(cacheId,'catalog');
+    if(saved?.revision===revision){
+      directPreviews.set(key,saved.record);
+      return saved.record;
+    }
+    const arc=ARCS.get(f.id),current=!!arc&&arc.mod===f.mod;
+    const stored=current&&await IDB.get(arc.id,'arcs');
+    const buf=stored?.buf||await downloadDriveFile(f.id);
+    let record;
+    try{record=await inspectArchiveVariant(f,buf,f.title,current)}
+    catch(e){
+      if(invalidModel(e)||!e?.code)rejectDriveFile(f);
+      return null;
+    }
+    directPreviews.set(key,record);
+    if(revision)await IDB.put({id:cacheId,revision,record},'catalog');
+    return record;
+  }catch{return null}
+}
 async function archiveChoices(buf,prefix='',depth=0,found=new Set()){const zip=await JSZip.loadAsync(buf),rows=[];for(const e of zipEntries(zip)){if(extOf(e.name)==='zip'&&depth<3){try{rows.push(...await archiveChoices(await e.async('arraybuffer'),prefix+e.name+'/',depth+1,found))}catch{found.add('zip')}}else if(MODEL_EXT.includes(extOf(e.name)))rows.push({name:prefix+e.name,crc:e._data?.crc32,size:e._data?.uncompressedSize});else if(!e.dir)found.add(extOf(e.name))}rows.found=[...found];return rows}
 async function importProductChoice(f,buf,entry,place){const ids=await importDriveBuf(f,buf,{silent:false,...(entry?{onlyEntry:entry}:{})});ui.refreshGroups?.();renderCatBody();if(place){const models=NovooiWorkspace.modelChoices(ids.map(id=>custom.get(id)).filter(Boolean));if(models.length===1)beginPlacement(models[0].id);else if(models.length){ui.openProducts=ui.openProducts||new Set();ui.openProducts.add('woo-'+f.productId);renderCatBody();toast('Velg modellen du vil plassere')}else throw Error('Ingen modell kunne lastes inn. Prøv en annen filtype.')}}
 const openDriveChoices=new Set();
