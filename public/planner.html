@@ -1874,7 +1874,7 @@ async function syncDrive(manual){if(DS.state!=='idle'){if(manual)toast('Synkroni
     DS.msg=`${idx.length} filer klare · Forhåndsvisninger lages automatisk`;
     if(manual)toast('Produktbiblioteket er oppdatert');
   }catch(e){DS.err=e;DS.msg=driveErr(e)[1]}
-  DS.state='idle';renderDS();startCatalogPreviews();
+  DS.state='idle';renderDS();catalogMetadata();startCatalogPreviews();
 }
 function previewKey(f){const stem=String(f.title||'').toLowerCase().replace(/(?:\.(?:zip|glb|gltf|skp|obj|fbx|3ds|3dm|dae|stl|step|stp|iges|igs|ifc|dxf))+$/g,'').replace(/[_-]+/g,' ').replace(/\b3d\b/g,'').replace(/\s+/g,' ').trim();return /^(model|3d|cad|bim|object|files?|tekniske filer)$/.test(stem)?f.id:(NovooiCatalog.productId(f)||String(f.brand||'').toLowerCase())+'|'+stem}
 function previewProduct(f){const key=previewKey(f);return [...custom.values()].find(p=>p.rec?.thumb&&(p.rec.drive===f.id?ARCS.get(f.id)?.mod===f.mod:previewKey({id:p.rec.drive,title:p.rec.fileName,brand:p.brand,productId:p.rec.productId})===key))}
@@ -1895,13 +1895,17 @@ async function applyProductLink(p,f,raw,variants,variantsAt){const rec=p.rec;rec
 }
 async function prepareMaterialPilot(p){try{const rec=p.rec,a=await IDB.get(rec.arc,'arcs');if(!a?.buf)throw Error('Originalfilen mangler');const parsed=await loadModel({buf:a.buf,name:rec.fileName,entry:rec.entry});await NovooiMaterials.ready([rec.productId]);await storeModel(rec,parsed.raw);forceRebuild(p.id);if(ui.rtab==='prod'&&selItem()?.pid===p.id)renderCatBody();toast('Materialpiloten er klar')}catch{toast('Kunne ikke klargjøre materialpiloten. Prøv å hente SKP-filen på nytt.')}}
 async function ensureProductVariants(p,force=false){if(READ_ONLY)return;if(!p?.rec?.productId||p.shop?.variantsLoaded&&(p.shop.variantsAt||p.shop.at)>Date.now()-900000&&!force)return;if(productVariantLoads.has(p.id))return productVariantLoads.get(p.id);if(p.rec.variantError&&!force)return;const run=(async()=>{try{const record=await productRequest({id:p.rec.productId,variants:'1'});if(record.status!=='linked')throw Error('Produktet er ikke tilgjengelig i nettbutikken');const f=DS.index.find(f=>f.id===p.rec.drive)||{productId:p.rec.productId,linkStatus:'linked',categories:NovooiCatalog.categories(record.product),category:catFrom(record.product.categories)};await applyProductLink(p,f,record.product,record.variants,record.variantsAt);delete p.rec.variantError;await IDB.put(p.rec);syncItems();renderTotals();if(ui.rtab==='prod'&&selItem()?.pid===p.id)renderCatBody()}catch(e){p.rec.variantError='Kunne ikke hente produktvariantene. Prøv igjen.';if(ui.rtab==='prod'&&selItem()?.pid===p.id)renderCatBody()}finally{productVariantLoads.delete(p.id)}})();productVariantLoads.set(p.id,run);return run}
-async function catalogMetadata(){if(catalogMetadataRunning||!DS.index.length||window.NOVOOI_STATIC)return;catalogMetadataRunning=true;try{
+async function catalogMetadata(){
+ if(catalogMetadataRunning||!DS.index.length||window.NOVOOI_STATIC)return;
+ const index=DS.index;
+ catalogMetadataRunning=true;
+ try{
  const groups=new Map();for(const f of DS.index){const id=NovooiCatalog.productId(f);f.productId=id;if(!id){f.linkStatus='unlinked';continue}if(!groups.has(id))groups.set(id,[]);groups.get(id).push(f)}
  const pending=[];for(const id of groups.keys()){const saved=(await IDB.get('woo-product-nok-'+id,'catalog'))?.value;if(saved&&saved.at>Date.now()-(saved.status==='unavailable'?300000:900000))PRODUCT_LINKS.set(id,saved);else pending.push(id)}
  const apply=async ids=>{for(const id of ids){const record=PRODUCT_LINKS.get(id);if(!record)continue;for(const f of groups.get(id)||[]){linkFileProduct(f,record);for(const p of custom.values())if(p.rec?.drive===f.id)await applyProductLink(p,f,record.product)}}patchCatalogPreviews();syncCategoryOptions();queueCatalogGroups();syncItems();renderTotals();await IDB.put({id:'drive-index',at:DS.at,index:DS.index},'catalog')};
  await apply([...groups.keys()].filter(id=>PRODUCT_LINKS.has(id)));for(let i=0;i<pending.length;i+=20){const ids=pending.slice(i,i+20),data=await productRequest({ids:ids.join(',')});for(const record of data.products||[]){PRODUCT_LINKS.set(record.id,record);await IDB.put({id:'woo-product-nok-'+record.id,value:record},'catalog')}await apply(ids)}
  DS.metadataError='';
-}catch(e){DS.metadataError='Kunne ikke kontrollere alle produkt-ID-er. Tidligere bekreftede koblinger beholdes.';DS.msg=DS.metadataError;renderDS()}finally{catalogMetadataRunning=false;queueCatalogGroups()}}
+}catch(e){DS.metadataError='Kunne ikke kontrollere alle produkt-ID-er. Tidligere bekreftede koblinger beholdes.';DS.msg=DS.metadataError;renderDS()}finally{catalogMetadataRunning=false;queueCatalogGroups();if(index!==DS.index)catalogMetadata()}}
 function fileCategory(f){return f.linkStatus==='linked'?(f.category||'other'):'other'}
 let previewQueueRunning=false;const previewAttempts=new Set();
 function patchCatalogPreviews(){document.querySelectorAll('.card[data-df]').forEach(card=>{const id=card.dataset.df,f=DS.index.find(f=>f.id===id),p=f&&previewProduct(f);if(!p){if(f?.image){const th=card.querySelector('.th');if(th&&!th.querySelector('img'))th.innerHTML=`<img alt="" loading="lazy" src="${esc(f.image)}">`}return}card.disabled=false;card.classList.remove('pend');card.dataset.p=p.id;delete card.dataset.df;const image=card.querySelector('.th');if(image)image.innerHTML=`<img alt="" loading="lazy" src="${p.rec.thumb}">`;const label=card.querySelector('.dstatus');if(label)label.textContent='Klikk for å plassere';card.onclick=()=>beginPlacement(p.id)})}
