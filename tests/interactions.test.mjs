@@ -1,7 +1,7 @@
 import test from 'node:test';import assert from 'node:assert/strict';import vm from 'node:vm';import {readFileSync} from 'node:fs';
 const html=readFileSync('public/planner.html','utf8');
 test('unselected furniture leaves orbit enabled until a completed click selects it',()=>{
- let handler;const controls={enabled:true};const ui={sel:null};const c={READ_ONLY:false,presentation:false,placing:false,stage:{addEventListener:(_,h)=>handler=h,style:{}},renderer:{domElement:{focus(){}}},ui,isOpening:()=>false,product:()=>({}),clearCorner(){},clearIWPoint(){},pick:()=>({type:'item',uid:'chair'}),selectedItems:new Set(),selectedWalls:new Set(),refreshGroupOutlines(){},closePanel(){},openProd(){},S:{items:[{u:'chair',x:1,z:2}]},floorAt:()=>({x:0,z:0}),ctl:()=>controls};vm.createContext(c);
+ let handler;const controls={enabled:true};const ui={sel:null};const c={READ_ONLY:false,presentation:false,placing:false,stage:{addEventListener:(_,h)=>handler=h,style:{}},renderer:{domElement:{focus(){}}},ui,isOpening:()=>false,product:()=>({}),clearCorner(){},clearIWPoint(){},pick:()=>({type:'item',uid:'chair'}),selectedItems:new Set(),selectedWalls:new Set(),refreshGroupOutlines(){},closePanel(){},openProd(){},S:{items:[{u:'chair',x:1,z:2}]},floorAt:()=>({x:0,z:0}),floorObjectElevation:()=>0,ctl:()=>controls};vm.createContext(c);
  vm.runInContext('let drag=null,down=null;'+html.slice(html.indexOf("stage.addEventListener('pointerdown',e=>{if(READ_ONLY"),html.indexOf("addEventListener('pointermove',e=>{")),c);
  handler({target:c.renderer.domElement,button:0,clientX:1,clientY:1});assert.equal(controls.enabled,true);assert.equal(vm.runInContext('drag',c),null);assert.equal(ui.sel,null);
  ui.sel='chair';handler({target:c.renderer.domElement,button:0,clientX:1,clientY:1});assert.equal(controls.enabled,false);assert.equal(vm.runInContext('drag.u',c),'chair');
@@ -18,3 +18,30 @@ test('outside grid geometry excludes rectangular and concave room floors',()=>{
 for(const index of [0,2,4])test('deleting outer corner '+index+' merges walls and remaps opening references',()=>{let commits=0;const n=5,c={READ_ONLY:false,presentation:false,S:{corners:Array.from({length:n},(_,i)=>({x:i*100,z:0})),wallColors:['a','b','c','d','e'],items:Array.from({length:n},(_,i)=>({pid:'door',wref:'o'+i,x:i*100,z:0})).concat({wref:'i0'})},ui:{},selectedCorner:{},selectedWalls:new Set(),cornerLocked:()=>false,product:()=>({}),isOpening:()=>true,wallByKey:key=>({key}),attachOpening(it,p,w){it.attached=w.key},clearIWPoint(){},buildRoom(){},syncItems(){},renderLeft(){},commit(){commits++},toast(){}};vm.createContext(c);const a=html.indexOf('function removeCorner(');vm.runInContext(html.slice(a,html.indexOf('\n',a)),c);c.removeCorner(index);assert.equal(c.S.corners.length,4);assert.equal(c.S.wallColors.length,4);assert.equal(c.S.items[5].wref,'i0');const prev=(index+n-1)%n,merged=prev>index?prev-1:prev;for(let i=0;i<n;i++){assert.equal(c.S.items[i].wref,'o'+(i===index||i===prev?merged:i>index?i-1:i));if(i===index||i===prev)assert.equal(c.S.items[i].attached,'o'+merged)}assert.equal(commits,1)});
 test('outer corner deletion preserves minimum room shape and respects locks and read-only mode',()=>{let commits=0;const c={READ_ONLY:false,presentation:false,S:{corners:[{},{},{}]},cornerLocked:()=>false,lockNotice(){},toast(){},commit(){commits++}};vm.createContext(c);const a=html.indexOf('function removeCorner(');vm.runInContext(html.slice(a,html.indexOf('\n',a)),c);c.removeCorner(1);assert.equal(c.S.corners.length,3);c.S.corners.push({});c.cornerLocked=()=>true;c.removeCorner(1);assert.equal(c.S.corners.length,4);c.cornerLocked=()=>false;c.READ_ONLY=true;c.removeCorner(1);assert.equal(c.S.corners.length,4);assert.equal(commits,0)});
 test('wall selection leaves paint unchanged and adds no contour geometry',()=>{const c={console,ui:{tab:'walls',applyAll:false,selWall:0,selIW:null},selectedWalls:new Set(),cssVar:()=> '#3D6FD8',floorMesh:null};vm.createContext(c);vm.runInContext(readFileSync('public/vendor/three.min.js','utf8'),c);vm.runInContext(`col=x=>new THREE.Color(x);const mat=new THREE.MeshStandardMaterial({color:0xa85a3c});const wall=new THREE.Mesh(new THREE.BoxGeometry(2,2,.1),mat);wall.userData={wall:0,mat};wallMeshes=[wall];`,c);const a=html.indexOf('function highlightWall('),b=html.indexOf('\n\n/* Items */',a);vm.runInContext(html.slice(a,b),c);c.highlightWall();assert.equal(vm.runInContext('wallMeshes[0].userData.mat.color.getHex()',c),0xa85a3c);assert.equal(vm.runInContext('wallMeshes[0].userData.mat.emissiveIntensity',c),0);assert.equal(vm.runInContext('wallMeshes[0].children.length',c),0);c.ui.tab=null;c.highlightWall();assert.equal(vm.runInContext('wallMeshes[0].children.length',c),0)});
+
+test('the same point on a tabletop can target the actual surface or the floor below',()=>{
+ const c=vm.createContext({});
+ vm.runInContext(readFileSync('public/vendor/three.min.js','utf8'),c);
+ const start=html.indexOf('function canPlaceOnFurniture(');
+ const end=html.indexOf('function visibleForPicking(',start);
+ const result=vm.runInContext(`
+  const CM=.01,ui={mode:'3d'},S={wallH:260,items:[{u:'table',pid:'table'}]};
+  const table=new THREE.Mesh(new THREE.BoxGeometry(1,.04,1),new THREE.MeshBasicMaterial());
+  table.position.set(1,.73,1);table.updateMatrixWorld(true);
+  const objs=new Map([['table',table]]);
+  const ray=new THREE.Raycaster();
+  const product=()=>({cat:'table',h:75});
+  const mountOf=()=> 'floor',isZenTile=()=>false,visibleItemHit=()=>true;
+  const clampInRoom=()=>{},floorPositionValid=()=>true;
+  const setNdc=e=>ray.set(new THREE.Vector3(1,e.originY,1),new THREE.Vector3(...e.direction));
+  ${html.slice(start,end)}
+  const pot={cat:'deco',name:'Keramikkpotte',h:16},it={u:'pot',rot:0};
+  const top=furnitureSurfaceAt({originY:2,direction:[0,-1,0]},it,pot);
+  const floor=furnitureSurfaceAt({originY:2,direction:[0,-1,0],altKey:true},it,pot);
+  const below=furnitureSurfaceAt({originY:.4,direction:[0,0,-1]},it,pot);
+  const rug=furnitureSurfaceAt({originY:2,direction:[0,-1,0]},it,{cat:'deco',name:'Ullteppe',h:1});
+  [top.surfaceY,floor.surfaceY,top.x===floor.x&&top.z===floor.z,below,rug]
+ `,c);
+ assert.ok(Math.abs(result[0]-75)<.001);
+ assert.deepEqual(Array.from(result).slice(1),[0,true,null,null]);
+});
