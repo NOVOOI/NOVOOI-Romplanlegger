@@ -15,3 +15,16 @@ test('legacy unrelated material overrides are not rendered on a product',()=>{co
 test('a material swatch refreshes product controls after selecting the webshop variant',async()=>{let renders=0;const c=setterContext({ui:{rtab:'prod'},renderCatBody:()=>renders++}),items=[{pid:'corner',sel:{}}];await c.setSurfaceMaterial(items,c.NovooiSurfaceLibrary.variantId('Treverk','Eik'));assert.equal(items[0].sel.Treverk,'Eik');assert.equal(renders,1)});
 test('changing the normal product variant automatically changes its material recipe',async()=>{const lib=context().NovooiSurfaceLibrary,shop={type:'variable',variantsLoaded:true,attrs:[{name:'Treverk',terms:[{name:'Eik'},{name:'Valnøtt'}]}],vars:[{price:100,sel:{Treverk:'Eik'}},{price:200,sel:{Treverk:'Valnøtt'}}]},item={u:'a',pid:'table',x:100,z:100,rot:0,sel:{Treverk:'Eik'}},p={id:'table',shop};let commits=0;const c=vm.createContext({NovooiSurfaceLibrary:lib,NovooiWorkspace:{moduleAttribute:()=>null},variantChangeBusy:false,READ_ONLY:false,S:{items:[item]},ui:{rtab:'cat'},product:()=>p,ensureProductVariants:async()=>{},optionAvail:()=>true,clampInRoom:()=>{},floorPositionValid:()=>true,objs:new Map(),syncItems:()=>{},renderTotals:()=>{},commit:()=>commits++,renderSelbar:()=>{},toast:m=>{throw Error(m)}});vm.runInContext(html.slice(html.indexOf('function surfaceIdForItem('),html.indexOf('function commonSurfaceChoices(')),c);const start=html.indexOf('async function changeItemAttributes('),end=html.indexOf('\nfunction ',start);vm.runInContext(html.slice(start,end),c);await c.changeItemAttributes([item],'Treverk','Valnøtt');assert.equal(item.sel.Treverk,'Valnøtt');assert.equal(item.surface,lib.variantId('Treverk','Valnøtt'));assert.equal(lib.get(item.surface).texture,'pavilion-walnut.jpg');assert.equal(commits,1)});
 test('material aliases handle manufacturer codes and uppercase Norwegian finish names',()=>{const lib=context().NovooiSurfaceLibrary;assert.equal(lib.recipe('Tekstil','Kvadrat Vidar 4 / 0333').texture,'vidar-0333-color.jpg');assert.equal(lib.recipe('Treverk','RØKT VALNØTT').texture,'smoked-walnut-veneer-color.jpg');assert.equal(lib.recipe('Treverk','HVITOLJET EIK').texture,'white-oak-veneer-color.jpg')});
+test('Tonning & Stryn material fallback keeps original textured, coloured and metallic surfaces',()=>{
+  const c=context(),T=c.THREE,lib=c.NovooiSurfaceLibrary,model=new T.Group();
+  model.userData.shared='all';
+  const plain=new T.MeshStandardMaterial({metalness:.5,roughness:.5}),painted=new T.MeshStandardMaterial({color:'#b17238'}),
+    textured=new T.MeshStandardMaterial({map:new T.Texture()}),metal=new T.MeshStandardMaterial({metalness:.9});
+  for(const material of [plain,painted,textured,metal])model.add(new T.Mesh(new T.BoxGeometry(),material));
+  assert.equal(lib.catalogueFinish(65961),'oak-white');
+  assert.equal(lib.catalogueFinish(62560),null);
+  assert.equal(lib.apply(model,lib.catalogueFinish(65961),null,lib.untexturedLightMesh),true);
+  assert.ok(model.children[0].material.map);
+  assert.deepEqual(Array.from(model.children.slice(1),m=>m.material),[painted,textured,metal]);
+  assert.equal(lib.recipe('Treverk','Hvitoljet').base,'oak-white');
+});
