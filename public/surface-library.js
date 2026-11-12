@@ -20,6 +20,8 @@
  function recipe(attribute,value){const t=norm(value),a=norm(attribute),has=r=>r.test(t);let id;
   if(has(/vidar(?:\s*4)?[\s/:-]*0?333\b/))id='vidar-333';
   else if(has(/valnott|walnut/))id=has(/rokt|smoked|dark/)?'walnut-smoked':'walnut';
+  else if(/treverk|treslag|wood/.test(a)&&has(/hvitoljet|white oil/))id='oak-white';
+  else if(/treverk|treslag|wood/.test(a)&&has(/oljet natur|ubehandlet|natural oil/))id='oak-light';
   else if(has(/\beik\b|\boak\b/))id=has(/sort|svart|black/)?'oak-black':has(/hvit|white|bleach|soap/)?'oak-white':'oak-light';
   else if(has(/\bask\b|\bash\b/))id='ash';else if(has(/teak/))id='teak';else if(has(/kirsebaer|cherry/))id='cherry';
   else if(has(/krom|chrome/))id='chrome';else if(has(/messing|brass/))id='brass';else if(has(/kobber|copper/))id='copper';else if(has(/bronse|bronze/))id='bronze';else if(has(/alumin/))id='aluminium';else if(has(/\bstal\b|\bsteel\b|inox/))id='steel';
@@ -49,8 +51,21 @@
   for(let i=0;i<positions.count;i+=3){a.fromBufferAttribute(positions,i).applyMatrix4(mesh.matrixWorld);b.fromBufferAttribute(positions,Math.min(i+1,positions.count-1)).applyMatrix4(mesh.matrixWorld);c.fromBufferAttribute(positions,Math.min(i+2,positions.count-1)).applyMatrix4(mesh.matrixWorld);n.crossVectors(ab.subVectors(b,a),ac.subVectors(c,a));const x=Math.abs(n.x),y=Math.abs(n.y),z=Math.abs(n.z);for(let j=0;j<3&&i+j<positions.count;j++){const p=j===0?a:j===1?b:c;uv[(i+j)*2]=(x>=y&&x>=z?p.z:p.x)/tile[0];uv[(i+j)*2+1]=(y>=x&&y>=z?p.z:p.y)/tile[1]}}
   geo.setAttribute('uv',new T.BufferAttribute(uv,2));return geo;
  }
- function apply(model,id,onReady){const e=get(id);if(!e)return false;const T=root.THREE,m=new T.MeshStandardMaterial({color:e.texture?'#ffffff':e.color,roughness:e.roughness,metalness:e.metalness||0,side:T.DoubleSide,...maps(e)});m.color.convertSRGBToLinear();if(m.normalScale)m.normalScale.setScalar(e.normalStrength??1);if(e.transparent){m.transparent=true;m.opacity=e.opacity??.4;m.depthWrite=false}m.name='NOVOOI · '+e.name;model.updateMatrixWorld(true);const oldGeometries=new Set(),oldMaterials=new Set();model.userData.ownedMaterials=model.userData.ownedMaterials||[];model.userData.ownedMaterials.push(m);model.userData.ownedGeometries=model.userData.ownedGeometries||[];
-  model.traverse(mesh=>{if(!mesh.isMesh)return;if(!model.userData.shared)for(const material of(Array.isArray(mesh.material)?mesh.material:[mesh.material]))oldMaterials.add(material);if(m.map&&mesh.geometry?.getAttribute('position')){const source=mesh.geometry;mesh.geometry=project(mesh,e.tile);model.userData.ownedGeometries.push(mesh.geometry);if(!model.userData.shared)oldGeometries.add(source)}mesh.material=m});for(const g of oldGeometries)g.dispose();for(const material of oldMaterials)material.dispose();if(onReady)Promise.all([...pending.values()]).then(onReady).catch(onReady);return true;
+ const tonningOakIds=new Set([65961,65962,65965,65968,65972,65977,73072]);
+ function catalogueFinish(productId){return tonningOakIds.has(Number(productId))?'oak-white':null}
+ function untexturedLightMesh(mesh){
+  const materials=Array.isArray(mesh.material)?mesh.material:[mesh.material];
+  return !mesh.geometry?.getAttribute('color')&&materials.length>0&&materials.every(m=>{
+   if(!m?.color||m.transparent||m.map||m.normalMap||m.bumpMap||m.roughnessMap||m.metalnessMap||m.alphaMap)return false;
+   const {r,g,b}=m.color,low=Math.min(r,g,b);
+   // The GLB exporter serializes legacy OBJ/3DS materials with metalness and roughness both at .5.
+   const legacyExport=m.metalness===.5&&m.roughness===.5;
+   return low>=.4&&Math.max(r,g,b)-low<.055&&((m.metalness||0)<=.25||legacyExport);
+  });
  }
- root.NovooiSurfaceLibrary=Object.freeze({entries:Object.freeze(entries),get,ready,apply,project,recipe,choices,selected,variantId});
+ function apply(model,id,onReady,filter){const e=get(id);if(!e)return false;
+  const targets=[];model.traverse(mesh=>{if(mesh.isMesh&&(!filter||filter(mesh)))targets.push(mesh)});if(!targets.length)return false;const T=root.THREE,m=new T.MeshStandardMaterial({color:e.texture?'#ffffff':e.color,roughness:e.roughness,metalness:e.metalness||0,side:T.DoubleSide,...maps(e)});m.color.convertSRGBToLinear();if(m.normalScale)m.normalScale.setScalar(e.normalStrength??1);if(e.transparent){m.transparent=true;m.opacity=e.opacity??.4;m.depthWrite=false}m.name='NOVOOI · '+e.name;model.updateMatrixWorld(true);const oldGeometries=new Set(),oldMaterials=new Set();model.userData.ownedMaterials=model.userData.ownedMaterials||[];model.userData.ownedMaterials.push(m);model.userData.ownedGeometries=model.userData.ownedGeometries||[];
+  targets.forEach(mesh=>{if(!model.userData.shared)for(const material of(Array.isArray(mesh.material)?mesh.material:[mesh.material]))oldMaterials.add(material);if(m.map&&mesh.geometry?.getAttribute('position')){const source=mesh.geometry;mesh.geometry=project(mesh,e.tile);model.userData.ownedGeometries.push(mesh.geometry);if(!model.userData.shared)oldGeometries.add(source)}mesh.material=m});for(const g of oldGeometries)g.dispose();for(const material of oldMaterials)material.dispose();if(onReady)Promise.all([...pending.values()]).then(onReady).catch(onReady);return true;
+ }
+ root.NovooiSurfaceLibrary=Object.freeze({entries:Object.freeze(entries),get,ready,apply,project,recipe,choices,selected,variantId,catalogueFinish,untexturedLightMesh});
 })(globalThis);
