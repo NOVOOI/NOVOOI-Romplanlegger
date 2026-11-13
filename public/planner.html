@@ -741,7 +741,25 @@ const MOUNT_RULES=[
   {re:/pendel|pendant|taklampe|takpendel|ceiling|chandelier|lysekrone/i,m:'hang'},
   {re:/stikk|kontakt|bryter|usb|socket|outlet|switch|dimmer|uttak|termostat|maleri|bilde|kunst|plakat|poster|\bprint\b|artwork|speil|mirror|vegghylle|wall ?shelf|wall|vegg|lampett|sconce|knagg|hook|klokke|clock|ramme|frame|panel|tavle|board/i,m:'wall'}];
 const guessMount=name=>{const r=MOUNT_RULES.find(x=>x.re.test(name||''));return r?r.m:'floor'};
-const wallOpt=o=>o&&o.mount==='wall'?{flip:!!o.flip}:null;
+// These supplier files use Z up. The mount normal comes from the backplate,
+ // which is not necessarily perpendicular to the model's shortest dimension.
+function northernWallYaw(rec){
+  if(rec.upsrc==='user'||extOf(partOf(rec.entry||rec.fileName||'').file)!=='3ds')return null;
+  const file=partOf(rec.entry||rec.fileName).file.split(/[\\/]/).pop();
+  if(!/northern/i.test(rec.brand+' '+rec.fileName+' '+rec.entry))return null;
+  if(/^(?:Birdy_Wall|Dahl_wall)/i.test(file))return Math.PI/2;
+  if(/^Northern_Glint_(?:glass|small)/i.test(file))return Math.PI/2;
+  if(/^Butterfly_/i.test(file))return Math.PI;
+  if(/^(?:Balancer_(?:mini_)?wall|Blush_3DS|Buddy_Wall|Northern_Glint_wall)/i.test(file))return 0;
+  return null;
+}
+const catalogLampMount=(name,file)=>/^Over_Me-\d+/i.test(file.split(/[\\/]/).pop())?'hang':guessMount(name);
+const wallOpt=o=>o?.mount==='wall'?{flip:!!o.flip,yaw:northernWallYaw(o)}:null;
+function normalizeRecord(raw,rec){
+  const wall=wallOpt(rec);
+  const up=wall?.yaw!=null?'z':rec.zUp;
+  return normalize(raw,rec.unit,up,rec.fit||1,wall);
+}
 /* Default height above floor (cm, to the bottom edge) for wall items. */
 function defElev(p){const n=p.name||'',h=p.h||0;
   if(/bryter|switch|dimmer|termostat/i.test(n))return Math.max(0,105-h/2);
@@ -1194,8 +1212,8 @@ function importErr(e){const c=e&&e.code;
 function normalize(raw,unit,zUp,fit,wall){
   const wrap=new THREE.Group(),pos=new THREE.Group(),fg=new THREE.Group(),og=new THREE.Group(),inner=new THREE.Group();inner.add(raw.clone(true));upRot(inner,zUp);inner.scale.setScalar((UNIT[unit]||.01)*(fit||1));
   og.add(inner);fg.add(og);pos.add(fg);wrap.add(pos);wrap.updateMatrixWorld(true);
-  if(wall){const s0=new THREE.Box3().setFromObject(wrap).getSize(new THREE.Vector3());const mn=Math.min(s0.x,s0.y,s0.z);
-    if(mn===s0.y&&s0.y<s0.z*.999)og.rotation.x=Math.PI/2;else if(mn===s0.x&&s0.x<s0.z*.999)og.rotation.y=-Math.PI/2;
+  if(wall){if(wall.yaw!=null)og.rotation.y=wall.yaw;else{const s0=new THREE.Box3().setFromObject(wrap).getSize(new THREE.Vector3());const mn=Math.min(s0.x,s0.y,s0.z);
+    if(mn===s0.y&&s0.y<s0.z*.999)og.rotation.x=Math.PI/2;else if(mn===s0.x&&s0.x<s0.z*.999)og.rotation.y=-Math.PI/2;}
     if(wall.flip)fg.rotation.y=Math.PI;wrap.updateMatrixWorld(true)}
   const b=new THREE.Box3().setFromObject(wrap);const c=b.getCenter(new THREE.Vector3());pos.position.set(-c.x,-b.min.y,-c.z);
   const s=b.getSize(new THREE.Vector3());
@@ -1242,7 +1260,13 @@ function buildProduct(p,vi,sel){const g=new THREE.Group();const v=p.vars[vi]||p.
   }
   if(p.custom&&!p.model){ensureModel(p).catch(()=>{});const ph=add(g,box(Math.max(.05,p.w*CM),Math.max(.05,p.h*CM),Math.max(.05,p.d*CM)),new THREE.MeshStandardMaterial({color:col('#C9C3B8'),transparent:true,opacity:.35,depthWrite:false}),0,Math.max(.05,p.h*CM)/2,0);ph.castShadow=false;g.userData.shared='geo';return g}
   if(p.custom){const o=p.model.clone(true);
-    if(p.shop){if(arguments[3]?.surface!=='original')applyShop(o,p,sel||{});g.userData.shared='all'}
+    if(p.shop||northernLamp(p)){
+      if(arguments[3]?.surface!=='original'){
+        if(p.shop)applyShop(o,p,sel||{});
+        applyNorthernLampFinish(o,p,sel||{});
+      }
+      g.userData.shared='all';
+    }
     else{if(v.c){const m=mat(v.c,.7);o.traverse(x=>{if(x.isMesh)x.material=m})}g.userData.shared=!v.c?'all':'geo'}
     if(isSuperdupertube(p)){
       g.userData.ownedMaterials=[];
@@ -1465,8 +1489,13 @@ function floorObjectElevation(it){
 function placeObj(it){const o=objs.get(it.u);if(!o)return;const p=product(it.pid);const mid=o.userData.mid;const m=mountOf(it,p);
   o.position.set(it.x*CM,0,it.z*CM);o.rotation.y=it.rot*Math.PI/180;
   if(mid&&p){mid.rotation.set(0,0,0);mid.position.set(0,m==='floor'?floorObjectElevation(it)*CM+rugClearance(p):0,0);
+    if(m==='wall'&&lampDetected(p)&&Number.isFinite(it.wallRoll)){
+      const angle=it.wallRoll*Math.PI/180;
+      mid.rotation.z=angle;
+      mid.position.x=Math.sin(angle)*p.h*CM/2;
+    }
     if(m==='hang')mid.position.y=Math.max(0,(S.wallH-p.h)*CM);
-    else if(m==='wall')mid.position.y=(it.y??defElev(p))*CM;
+    else if(m==='wall')mid.position.y=((it.y??defElev(p))+(1-Math.cos(mid.rotation.z))*p.h/2)*CM;
     else if(m==='opening')mid.position.y=(it.y||0)*CM;
     else if(m==='floor'&&p.mount==='wall'){mid.rotation.x=-Math.PI/2;mid.position.set(0,p.d/2*CM,p.h/2*CM)}
     else if(m==='ceil'){mid.rotation.x=Math.PI/2;mid.position.set(0,(S.wallH-p.d/2)*CM,-p.h/2*CM)}}
@@ -1814,6 +1843,10 @@ function rotate(deg){
     if(p.open.kind==='door'){it.sw=it.sw==='out'?'in':'out';syncItems();commit();renderSelbar()}
     return;
   }
+  if(mountOf(it,p)==='wall'&&lampDetected(p)){
+    it.wallRoll=((it.wallRoll||0)+deg+360)%360;
+    placeObj(it);commit();return;
+  }
   if(mountOf(it,p)==='wall'){toast('Følger veggen. Flytt den til gulv eller tak for å rotere fritt');return}
   const attempts=[deg];
   if(deg&&Math.abs(deg)<90)attempts.push(Math.sign(deg)*90);
@@ -2003,15 +2036,28 @@ function parseGLB(buf){return new Promise((res,rej)=>{try{new THREE.GLTFLoader()
 async function storeModel(rec,raw){let r2=raw;
   try{const glb=await exportGLB(raw);const back=await parseGLB(glb);back.userData.unit=raw.userData.unit||null;r2=back;await IDB.put({id:rec.id,glb},'glbs');if(isZenTile({rec}))rec.zenMaterialVersion=ZEN_MATERIAL_VERSION;if(heymatTextureSize(rec.entry))rec.heymatMaterialVersion=HEYMAT_MATERIAL_VERSION;rec.cv=CV}catch(e){rec.cv=0}
   if(!rec.mount){rec.mount=guessMount(rec.name);rec.flip=false}
-  const n=normalize(r2,rec.unit,rec.zUp,rec.fit||1,wallOpt(rec));registerCustom(rec,n,r2);rec.dims={w:n.w,d:n.d,h:n.h};
+  const n=normalizeRecord(r2,rec);registerCustom(rec,n,r2);rec.dims={w:n.w,d:n.d,h:n.h};
   thumbs.delete(rec.id);delete rec.thumb;const t=thumb(rec.id);if(t)rec.thumb=t;await IDB.put(rec);return n}
 const modelLoads=new Map();
 function ensureModel(p){if(!p||!p.custom||p.model)return Promise.resolve(p);if(p.loadFailed)return Promise.reject(Error('Modellen mangler. Last opp filen på nytt.'));if(modelLoads.has(p.id))return modelLoads.get(p.id);
   const pr=(async()=>{loadingStatus('Laster '+p.name);await yieldUI();const rec=p.rec;let raw=null;const refreshHeymat=heymatTextureSize(rec.entry)&&rec.heymatMaterialVersion!==HEYMAT_MATERIAL_VERSION;const refreshZen=!rec.normalized&&isZenTile(p)&&rec.zenMaterialVersion!==ZEN_MATERIAL_VERSION;const g=refreshHeymat||refreshZen?null:await IDB.get(p.id,'glbs');if(g&&g.glb){try{raw=await parseGLB(g.glb)}catch(e){raw=null}}
     if(raw&&rec.upsrc!=='user'&&!rec.normalized&&['glb','gltf','skp','dae'].includes(extOf(partOf(rec.entry||rec.fileName).file))&&upOf(rec.zUp)!=='y'){rec.zUp='y';await storeModel(rec,raw)}
-    if(raw){const n=rec.normalized?{obj:raw,w:rec.dims.w,d:rec.dims.d,h:rec.dims.h}:normalize(raw,rec.unit,rec.zUp,rec.fit||1,wallOpt(rec));registerCustom(rec,n,raw)}
+    const previousDepth=p.d;
+    if(raw){const n=rec.normalized?{obj:raw,w:rec.dims.w,d:rec.dims.d,h:rec.dims.h}:normalizeRecord(raw,rec);registerCustom(rec,n,raw)}
     else if(isZenTile(p)){const m=await loadModel({name:rec.fileName,entry:rec.entry});await storeModel(rec,m.raw)}
     else{const a=rec.arc&&await IDB.get(rec.arc,'arcs');if(!a||!a.buf){if(!rec.drive)throw{code:'missing'};const buf=await downloadDriveFile(rec.drive);const m=await loadModel({buf,name:rec.fileName,entry:rec.entry});await storeModel(rec,m.raw)}else{const m=await loadModel({buf:a.buf,name:rec.fileName,entry:rec.entry});await storeModel(rec,m.raw)}}
+    const updated=custom.get(p.id);
+    if(wallOpt(rec)?.yaw!=null&&!rec.normalized&&updated.d!==previousDepth){
+      for(const it of S.items){
+        if(it.pid!==p.id||mountOf(it,updated)!=='wall')continue;
+        const angle=it.rot*Math.PI/180,delta=(updated.d-previousDepth)/2;
+        it.x+=Math.sin(angle)*delta;
+        it.z+=Math.cos(angle)*delta;
+      }
+      rec.dims={w:updated.w,d:updated.d,h:updated.h};
+      await IDB.put(rec);
+      persist();
+    }
     forceRebuild(p.id);if(ui.sel&&S.items.some(i=>i.u===ui.sel&&i.pid===p.id)){renderSelbar();if(ui.rtab==='prod')renderCatBody()}return custom.get(p.id)})();
   modelLoads.set(p.id,pr);pr.catch(()=>{p.loadFailed=true;toast('Kunne ikke laste '+p.name+'. Last opp modellen på nytt.');}).then(()=>{modelLoads.delete(p.id);if(!modelLoads.size)loadingStatus('')});return pr}
 function registerLazy(rec){if(heymatTextureSize(rec.entry)&&rec.heymatMaterialVersion!==HEYMAT_MATERIAL_VERSION)delete rec.thumb;registerCustom(rec,{obj:null,w:rec.dims.w,d:rec.dims.d,h:rec.dims.h},null)}
@@ -2026,7 +2072,7 @@ function registerCustom(rec,n,raw){
 /* Change the size of a model that is already in the catalog; every placed copy updates. */
 async function tipModel(pid){let p=product(pid);if(!p?.custom||READ_ONLY)return;try{p=await ensureModel(p);const order=['y','z','x','-y','-z','-x'],rec=p.rec;rescaleCustom(pid,{...rec,zUp:order[(order.indexOf(upOf(rec.zUp))+1)%order.length],upsrc:'user'});commit();renderSelbar()}catch{toast('Kunne ikke endre modellretningen')}}
 function rescaleCustom(pid,o){const p=custom.get(pid);if(!p)return;if(!p.raw){ensureModel(p).then(()=>rescaleCustom(pid,o)).catch(()=>{});return}const rec=p.rec;const wasMount=p.mount;delete rec.normalized;Object.assign(rec,{unit:o.unit,fit:o.fit||1,zUp:o.zUp,usrc:o.usrc,upsrc:o.upsrc||rec.upsrc,mount:o.mount||'floor',flip:!!o.flip});
-  const n=normalize(p.raw,rec.unit,rec.zUp,rec.fit,wallOpt(rec));Object.assign(p,{w:n.w,d:n.d,h:n.h,model:n.obj,mount:rec.mount,slotInfo:slotsOf(n.obj)});thumbs.delete(pid);
+  const n=normalizeRecord(p.raw,rec);Object.assign(p,{w:n.w,d:n.d,h:n.h,model:n.obj,mount:rec.mount,slotInfo:slotsOf(n.obj)});thumbs.delete(pid);
   if(wasMount!==rec.mount)S.items.forEach(it=>{if(it.pid===pid){delete it.mnt;delete it.y;if(rec.mount==='wall')placeOnNearestWall(it,p)}});
   S.items.forEach(it=>{if(it.pid===pid){const ob=objs.get(it.u);if(ob){itemsG.remove(ob);objs.delete(it.u)}}});
   if(o.usrc==='user'){const bk=brandKey(rec.brand,rec.fileName,rec.entry);if(bk){brandUnits[bk]=rec.unit;ls.set('novooi-brand-units',JSON.stringify(brandUnits))}}
@@ -2049,6 +2095,71 @@ const COLOR_WORDS=[[/hvitoljet|white ?oiled|hvitpigment|white ?pigment|soaped|s�
   [/peach|fersken|apricot|aprikos/,'#E5B79D'],[/pink|rosa|blush|rose/,'#D8A9A5'],[/burgundy|bordeaux|wine|\bvin\b/,'#6B2A33'],[/red|rød/,'#A33A33'],[/rust|terracotta|terrakotta|copper|kobber/,'#A85A3C'],[/orange|oransje/,'#D07A3C'],
   [/mustard|sennep|ochre|oker|curry/,'#C59B3B'],[/yellow|gul/,'#E0C14E'],[/cognac|camel|\btan\b|caramel|karamell/,'#A86B3C'],[/dark ?brown|mørk ?brun|chocolate|sjokolade|espresso/,'#4A3328'],[/brown|brun/,'#7A5638'],[/purple|lilla|violet|plum|plomme|lavender|lavendel/,'#7A5C83']];
 const colorWord=n=>{const s=String(n||'').toLowerCase();const r=COLOR_WORDS.find(([re])=>re.test(s));return r?r[1]:null};
+function northernLamp(p){
+  return (p.mount==='wall'||p.mount==='hang')&&/northern/i.test(
+    [p.brand,p.rec?.fileName,p.rec?.entry].join(' ')
+  );
+}
+const NORTHERN_FINISH={
+  97:'Black Steel',100:'Black Steel',108:'Black matt',663:'Opal glass',
+  53747:'Off white',54000:'Dark grey',54049:'White matt',55099:'Brass',
+  55103:'Brass',56294:'Off white',58885:'Black/brass',58886:'Black/brass',
+  66799:'Brass',69881:'Brass',69883:'Black',69885:'Black',
+  69906:'Black',69910:'Pink',69911:'Black'
+};
+function applyNorthernLampFinish(model,p,selection){
+  if(!northernLamp(p))return;
+  const id=Number(p.rec?.productId);
+  const file=partOf(p.rec?.entry||p.rec?.fileName||'').file;
+  const attr=p.shop?.attrs?.find(a=>/colou?r|farge|finish|utførelse/i.test(a.name));
+  const selected=selection[attr?.name];
+  const finish=selected||NORTHERN_FINISH[id]||attr?.terms.find(t=>colorWord(t.name))?.name;
+  if(!finish)return;
+  const explicitMap=selected&&p.rec?.map?.[attr?.name]?.length;
+  if(explicitMap)return;
+  const metal=/brass|messing|steel|stål|alumini|chrome|krom|kobber|copper/i;
+  const dark=/black|sort|svart/i;
+  const finishes=finish.split(/\s*(?:\/|(?<=black|white)\s+(?=brass|steel))\s*/i);
+  const paint=finishes[0],accent=finishes[1]||paint;
+  p._northernMaterials||=new WeakMap();
+  model.traverse(mesh=>{
+    if(!mesh.isMesh)return;
+    const recolor=source=>{
+      if(!source?.color||source.map||mesh.geometry?.attributes?.color&&source.vertexColors)return source;
+      const name=source.name||'';
+      const placeholder=Math.min(source.color.r,source.color.g,source.color.b)>.88;
+      const heatMesh=id===69881&&name==='stone';
+      if(!placeholder&&!heatMesh)return source;
+      const glass=extOf(file)==='3ds'&&(
+        id===58886&&/^mat0$/.test(name)||
+        [55099,55103].includes(id)&&name=== (/small/i.test(file)?'mat3':'mat6')||
+        id===58885&&(/^(?:Fillet\d*|Fillet_)/i.test(mesh.name)||source.color.r>.94)||
+        id===663&&name==='mat3'||
+        id===54000&&name===(/Over_Me-30/i.test(file)?'mat1':'mat0')||
+        id===66799&&/glass/i.test(file)&&/^Fillet/i.test(mesh.name)||
+        id===69906&&/^\?\?1$/.test(mesh.name));
+      const birdyAccent=[97,100].includes(id)&&
+        name===(/short/i.test(file)?'mat2':'mat6');
+      const brassHardware=[58885,58886].includes(id)&&!glass&&!/^(?:Boss-E_007|Revolve11)$/i.test(mesh.name);
+      const color=birdyAccent||brassHardware?accent:paint;
+      const tone=glass?'#F1EDE3':/light yellow/i.test(color)?'#E9D68D':/dusty blue/i.test(color)?'#718494':colorWord(color);
+      if(!tone)return source;
+      const metallic=!glass&&(heatMesh||metal.test(color)&&!dark.test(color));
+      let variants=p._northernMaterials.get(source);
+      if(!variants){variants=new Map();p._northernMaterials.set(source,variants)}
+      const key=tone+'|'+metallic;
+      if(!variants.has(key)){
+        const material=new THREE.MeshStandardMaterial({
+          name,color:col(tone),roughness:metallic?.4:.72,metalness:metallic?.7:0,
+          side:source.side,opacity:source.opacity,transparent:source.transparent
+        });
+        variants.set(key,material);
+      }
+      return variants.get(key);
+    };
+    mesh.material=Array.isArray(mesh.material)?mesh.material.map(recolor):recolor(mesh.material);
+  });
+}
 function hashColor(n){let h=0;for(const c of String(n))h=(h*31+c.charCodeAt(0))|0;const c=new THREE.Color();c.setHSL(((h>>>0)%360)/360,.18,.55);return'#'+c.getHexString()}
 const termColor=(rec,a,t)=>(rec&&rec.tcol&&rec.tcol[a]&&rec.tcol[a][t])||colorWord(t)||hashColor(t);
 const RX_TEX=/textile|tekstil|stoff|fabric|trekk|uphol|cushion|pute|seat|sete|leather|lær|skinn|cloth|cover|farge|colou?r|polstr/i;
@@ -2361,6 +2472,7 @@ async function applyProductLink(p,f,raw,variants,variantsAt){const rec=p.rec;rec
  const old=rec.shop,sh=buildShop(raw,variants||[]);sh.linkMethod='folder-id';sh.variantsLoaded=raw.type!=='variable'||Array.isArray(variants);sh.at=f.linkedAt||Date.now();if(sh.variantsLoaded)sh.variantsAt=variantsAt||Date.now();if(!sh.variantsLoaded&&old?.id===sh.id&&old.variantsLoaded&&(old.variantsAt||old.at)>Date.now()-900000){sh.vars=old.vars;sh.variantsLoaded=true;sh.variantsAt=old.variantsAt||old.at}
  if(old?.id!==sh.id){rec.map={};rec.tcol={};delete rec.materialRecipe}
  rec.shop=sh;rec.linkMethod='folder-id';rec.auto=true;rec.catalogCat=f.category;Object.assign(p,{shop:sh,price:sh.min??0,cat:f.category||'other'});if(NovooiMaterials.inspect(p).status==='ready'){await NovooiMaterials.ready([rec.productId]);delete rec.thumb;thumbs.delete(p.id);const preview=thumb(p.id);if(preview)rec.thumb=preview}await IDB.put(rec);
+ if(northernLamp(p)&&p.model)forceRebuild(p.id);
  if(!sh.variantsLoaded&&S.items.some(it=>it.pid===p.id))ensureProductVariants(p);
 }
 async function prepareMaterialPilot(p){try{const rec=p.rec,a=await IDB.get(rec.arc,'arcs');if(!a?.buf)throw Error('Originalfilen mangler');const parsed=await loadModel({buf:a.buf,name:rec.fileName,entry:rec.entry});await NovooiMaterials.ready([rec.productId]);await storeModel(rec,parsed.raw);forceRebuild(p.id);if(ui.rtab==='prod'&&selItem()?.pid===p.id)renderCatBody();toast('Materialpiloten er klar')}catch{toast('Kunne ikke klargjøre materialpiloten. Prøv å hente SKP-filen på nytt.')}}
@@ -2407,7 +2519,7 @@ async function importDriveBuf(f,buf,{silent=false,onlyEntry=null,firstOnly=false
     const name=pr?pr.name:(entry===cyclopEntry?'Cyclop 405':zenArchiveColor(f.title)?entry.replace(/\.glb$/i,'').replace(/Zen (beige|grey|black)/i,(_,color)=>'Zen '+color[0].toUpperCase()+color.slice(1)):heymatTextureSize(entry)?prettyName(f.title).replace(/ BIM$/i,'')+' '+heymatTextureSize(entry).join(' × ')+' cm':entries.length>1?prettyName(entry):[prettyName(entry),prettyName(f.title)].sort((a,b)=>b.length-a.length)[0]);
     const zUp=isZenTile({rec:{fileName:f.title,entry}})?'y':pr&&pr.upsrc==='user'?pr.zUp:autoUp(r.raw,r.ext);const keepUnit=pr&&['user','fit'].includes(pr.usrc);
     const pu=keepUnit?{unit:pr.unit,src:pr.usrc}:pickUnit(r.raw,zUp,name,brandKey(f.brand,f.title,entry));
-    const rec=Object.assign({},pr||{},{id:pr?pr.id:'u_'+uid(),arc:arcId,name,unit:pu.unit,usrc:pu.src,fit:keepUnit?(pr.fit||1):1,zUp,mount:pr?pr.mount:guessMount(name),flip:pr?!!pr.flip:false,fileName:f.title,entry,brand:f.brand,productId:f.productId,linkStatus:f.linkStatus,catalogCategories:f.categories||[],catalogCat:f.category||fileCategory(f),drive:f.id,price:pr?pr.price||0:0});
+    const rec=Object.assign({},pr||{},{id:pr?pr.id:'u_'+uid(),arc:arcId,name,unit:pu.unit,usrc:pu.src,fit:keepUnit?(pr.fit||1):1,zUp,mount:pr?pr.mount:catalogLampMount(name,entry),flip:pr?!!pr.flip:false,fileName:f.title,entry,brand:f.brand,productId:f.productId,linkStatus:f.linkStatus,catalogCategories:f.categories||[],catalogCat:f.category||fileCategory(f),drive:f.id,price:pr?pr.price||0:0});
     kept.add(rec.id);await storeModel(rec,r.raw);const verified=PRODUCT_LINKS.get(f.productId);if(verified?.status==='linked')await applyProductLink(custom.get(rec.id),f,verified.product);if(pr)forceRebuild(rec.id)}
   for(const p of old)if(!onlyEntry&&!firstOnly&&!kept.has(p.id)){custom.delete(p.id);await IDB.del(p.id);await IDB.del(p.id,'glbs')}
   if(S.items.some(it=>kept.has(it.pid)))syncItems();return [...kept]}
@@ -2421,7 +2533,7 @@ function renderSelbar(){if(selectedItems.size>1){renderMulti();return}const sb=$
    ${p&&p.mount==='wall'?(()=>{const m=mountOf(it,p);return`<div class="vsep"></div><div class="seg mseg" role="group" aria-label="Plassering">${[['wall','Vegg'],['floor','Gulv'],['ceil','Tak']].map(([k,l])=>`<button data-mnt="${k}" aria-pressed="${m===k}">${l}</button>`).join('')}</div>${m==='wall'?`<label class="hgt">Høyde<span class="num"><input id="selY" type="number" min="0" step="1" value="${Math.round(it.y??defElev(p))}" aria-label="Høyde over gulv i cm"><span>cm</span></span></label>`:''}`})():''}
    <div class="vsep"></div><div class="acts">
    ${p&&p.custom?`<button class="ibtn" data-a="tip" title="Rett opp en modell som ligger sidelengs" aria-label="Snu modellretning"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 19V9h10v10H4Zm5-15h10v10M14 4l5 5M4 4v3M2 5h4"/></svg></button><button class="ibtn" data-a="size" title="Juster størrelse" aria-label="Juster størrelse" aria-pressed="${!!ui.sizeOpen}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8h18v8H3z"/><path d="M7 8v3M11 8v4M15 8v3M19 8v4"/></svg></button>`:''}
-   <button class="ibtn" data-a="rl" title="Roter mot klokka (Shift+R for 90°)" aria-label="Roter mot klokka"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 4v5h5"/><path d="M3.5 9A8.5 8.5 0 1 1 5 16"/></svg></button>
+   <button class="ibtn" data-a="rl" title="${mountOf(it,p)==='wall'&&lampDetected(p)?'Drei lampen på veggen (Shift for 90°)':'Roter mot klokka (Shift+R for 90°)'}" aria-label="Roter mot klokka"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 4v5h5"/><path d="M3.5 9A8.5 8.5 0 1 1 5 16"/></svg></button>
    <button class="ibtn" data-a="rr" title="Roter med klokka" aria-label="Roter med klokka"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 4v5h-5"/><path d="M20.5 9A8.5 8.5 0 1 0 19 16"/></svg></button>
    <button class="ibtn" data-a="dup" title="Dupliser (Ctrl+D)" aria-label="Dupliser"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3"/></svg></button>
    <button class="ibtn del" data-a="del" title="Fjern (Delete)" aria-label="Fjern"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg></button></div>`;
@@ -2879,7 +2991,7 @@ async function previewDirectFiles(details){
 }
 async function loadDirectPreview(f,key){
   if(directPreviews.has(key))return directPreviews.get(key);
-  const revision=fileRevision(f),cacheId='direct-preview-v1-'+f.id;
+  const revision=fileRevision(f),cacheId='direct-preview-v2-'+f.id;
   try{
     const saved=revision&&await IDB.get(cacheId,'catalog');
     if(saved?.revision===revision){
@@ -2954,16 +3066,17 @@ function modelHasGeometry(raw){
 async function inspectArchiveVariant(f,buf,entry,current){
   const cached=current&&[...custom.values()].find(p=>p.rec?.drive===f.id&&p.rec.thumb&&(p.rec.entry===entry||p.rec.entry===entry+'#0'));
   const finish=NovooiSurfaceLibrary.catalogueFinish(f.productId);
-  if(cached&&!isSuperdupertube(cached)&&!finish)return {name:entry,thumb:cached.rec.thumb,dims:{w:cached.w,d:cached.d,h:cached.h}};
+  if(cached&&!isSuperdupertube(cached)&&!finish&&!northernLamp(cached))return {name:entry,thumb:cached.rec.thumb,dims:{w:cached.w,d:cached.d,h:cached.h}};
   const {raw,ext}=await loadModel({buf,name:f.title,entry,silent:true});
   if(!modelHasGeometry(raw))throw{code:'nomesh'};
-  const name=prettyName(entry),mount=guessMount(name),zUp=autoUp(raw,ext);
+  const name=prettyName(entry),mount=catalogLampMount(name,entry),zUp=autoUp(raw,ext);
   const {unit}=pickUnit(raw,zUp,name,brandKey(f.brand,f.title,entry));
-  const n=normalize(raw,unit,zenArchiveColor(f.title)?'y':zUp,1,wallOpt({mount}));
+  const rec={entry,fileName:f.title,brand:f.brand,productId:f.productId,mount,unit,zUp:zenArchiveColor(f.title)?'y':zUp};
+  const n=normalizeRecord(raw,rec);
   const dims={w:n.w,d:n.d,h:n.h};
   try{
     if(finish)await NovooiSurfaceLibrary.ready([finish]).catch(()=>{});
-    const thumb=renderModelThumb({name,model:n.obj,custom:true,vars:CUSTOMV,mount,rec:{productId:f.productId}});
+    const thumb=renderModelThumb({name,model:n.obj,custom:true,vars:CUSTOMV,mount,brand:f.brand,rec});
     return {name:entry,thumb,dims};
   }finally{
     const resources=new Set();
@@ -2979,7 +3092,7 @@ async function inspectArchiveVariant(f,buf,entry,current){
 }
 
 async function showArchiveVariants(f,buf,entries,current){
-  const cacheId='archive-variants-v1-'+f.id,revision=fileRevision(f);
+  const cacheId='archive-variants-v2-'+f.id,revision=fileRevision(f);
   const cached=revision&&await IDB.get(cacheId,'catalog');
   const results=new Map(cached?.revision===revision?cached.results:[]);
   const d=showDesignDialog(f.productName||prettyName(f.title),`<p>Velg modellen du vil plassere.</p><div class="product-files archive-variants"></div><p role="status" id="fileChoiceStatus"></p>`);
@@ -3097,7 +3210,7 @@ async function changeItemAttributes(items,attribute,value){if(variantChangeBusy|
 function renderModuleMappings(cb,it,p){const attr=NovooiWorkspace.moduleAttribute(p.shop);if(!attr)return;const id=NovooiWorkspace.family(p),box=document.createElement('details');box.className='module-mappings psec';box.innerHTML='<summary>Modellfiler for moduler</summary><p class="note">Navngitte filer kobles automatisk. Velg en fil her hvis modulnavnene ikke samsvarer.</p>'+attr.terms.map((t,i)=>`<label>${esc(t.name)}<select class="txt" data-module-mapping="${esc(t.name)}"><option value="">Automatisk</option>${moduleCandidates(p).map(c=>`<option value="p:${esc(c.id)}">${esc(prettyName(c.product.rec.entry||c.label))} · ${esc(c.format.toUpperCase())}</option>`).join('')}${moduleFiles(id).map(f=>`<option value="f:${esc(f.id)}">${esc(prettyName(f.title))} · ${esc(extOf(f.title).toUpperCase())}</option>`).join('')}</select></label>`).join('');cb.appendChild(box);IDB.get('module-map-'+id,'catalog').then(record=>{if(!box.isConnected)return;box.querySelectorAll('[data-module-mapping]').forEach(input=>{const entry=record?.map?.[input.dataset.moduleMapping];input.value=entry?.pid?'p:'+entry.pid:entry?.file?'f:'+entry.file:''})});box.querySelectorAll('[data-module-mapping]').forEach(input=>input.onchange=async()=>{const record=await IDB.get('module-map-'+id,'catalog')||{id:'module-map-'+id,map:{}},value=input.value;value?record.map[input.dataset.moduleMapping]=value.startsWith('p:')?{pid:value.slice(2)}:{file:value.slice(2)}:delete record.map[input.dataset.moduleMapping];await IDB.put(record,'catalog');toast('Modellkobling lagret')})}
 function renderSharedVariants(sb){const items=selectedFurniture();if(items.length<2)return;const products=items.map(it=>product(it.pid)),family=NovooiWorkspace.family(products[0]);if(!family||!products.every(p=>NovooiWorkspace.family(p)===family&&p.shop))return;const attributes=products[0].shop.attrs.filter(a=>!NovooiWorkspace.moduleAttribute(products[0].shop)||a.name!==NovooiWorkspace.moduleAttribute(products[0].shop).name);if(!attributes.length)return;const box=document.createElement('div');box.className='shared-variants';box.innerHTML=attributes.map((a,i)=>`<label>${esc(a.name)}<select class="txt" data-shared-attr="${esc(a.name)}" ${items.some(it=>it.locked)||products.some(p=>p.shop.type==='variable'&&!p.shop.variantsLoaded)?'disabled':''}><option value="">${items.every(it=>it.sel?.[a.name]===items[0].sel?.[a.name])?esc(items[0].sel?.[a.name]||'Velg for alle'):'Ulike valg'}</option>${a.terms.filter(t=>products.every((p,i)=>optionAvail(p.shop,items[i].sel||{},a.name,t.name))).map(t=>`<option value="${esc(t.name)}">${esc(t.name)}</option>`).join('')}</select></label>`).join('');sb.appendChild(box);box.querySelectorAll('[data-shared-attr]').forEach(input=>input.onchange=async()=>{if(!input.value)return;input.disabled=true;await changeItemAttributes(items,input.dataset.sharedAttr,input.value);renderMulti()});for(const p of products)if(!p.shop.variantsLoaded&&!p.rec?.variantError&&!productVariantLoads.has(p.id))ensureProductVariants(p).then(()=>{if(p.shop.variantsLoaded&&selectedItems.size>1)renderMulti()})}
 function workspaceIcon(name){const paths={snap:'<path d="M4 3v18M8 8h11v9H8zM8 4v4M19 17v4"/>',sun:'<circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l2 2m10 10 2 2M5 19l2-2M17 7l2-2"/>',moon:'<path d="M19 16A8 8 0 0 1 8 5a8 8 0 1 0 11 11Z"/>',settings:'<path d="M4 6h16M4 12h16M4 18h16"/><circle cx="8" cy="6" r="2"/><circle cx="16" cy="12" r="2"/><circle cx="10" cy="18" r="2"/>'};return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+(paths[name]||paths.settings)+'</svg>'}
-function openSettings(){showDesignDialog('Innstillinger',`<h3>Versjonshistorikk</h3><p>Velg en versjon for å se hva som er endret og hvordan det fungerer.</p><ol class="changelog"><li><details><summary><b>1.0 · 31. oktober 2026</b><span>Rom i 2D og 3D, møbler, materialer og lagring.</span></summary><p>Rom i 2D og 3D, møbler, vegger, gulv og lagring.</p></details></li><li><details><summary><b>1.1 · 1. november 2026</b><span>Lyst tema, enklere menyer og kortere introduksjon.</span></summary><p>Lyst NOVOOI-tema og logo, tydeligere rutenett, færre eksempelmøbler. Produktkontur vises bare ved markering.</p><p>Forenklet snapping og «I rommet». Fjernet plasskontroll og egen objektmeny. Kortere introduksjon.</p></details></li><li><details><summary><b>1.2 · 2. november 2026</b><span>Drive, publisering, raskere bibliotek og bedre redigering.</span></summary><p>Menyer åpnes over rommet. Nye rom opprettes direkte uten skjema. Ryddigere «I rommet» uten eksempelvarer og unødvendige tips.</p><p>Slett veggpunkter med Delete/Backspace. Ny veggmarkering bevarer fargene. Rettet markering av fargeprøver.</p><p>GitHub- og Cloudflare-publisering, felles Drive-bibliotek, mellomlagring, SketchUp-støtte og automatiske forhåndsvisninger. Menyvalg beholdes under synk. Vipp importerte modeller og fest nærmeste side til veggen.</p><p>Lagring, deling, kameravinkler, bildeeksport, flervalg, mål og lyskontroller.</p></details></li><li><details><summary><b>1.3 · 3. november 2026</b><span>Produkt-ID, riktige kategorier og priser, ekte materialpiloter.</span></summary><p>Produkt-ID kobler Drive til WooCommerce-kategorier, varianter og priser i NOK. Filer uten treff og feil modelltilknytning skjules. Materialpiloter med ekte Vidar 333 og valnøtt.</p></details></li><li><details><summary><b>1.4 · 5. november 2026</b><span>Samlede filer, modulsofaer, felles variantvalg og ny typografi.</span></summary><p>Ett produktkort med filvalg og skjulte duplikater. Modulvalg bytter modell for modulsofaer med matchende filer, og moduler fester seg sammen. Innervegger stopper møbler.</p><p>Felles variantvalg for markerte produkter, rommets modeller lastes først, og et nytt klikk opphever markering. Firkantede ikonknapper, NOVOOI-favicon og Season Sans. Gazpacho brukes bare i store hovedtitler.</p><p><b>Bruk av modulsofaer:</b> Åpne produktkortet og velg filtypen du vil bruke. Valget «Modul» bytter mellom for eksempel hjørne- og midtmodul. Tekstil og andre valg beholdes. Hvis filnavnet er uklart, velger du riktig fil under «Modellfiler for moduler».</p><p><b>Felles variantvalg:</b> Hold Shift og klikk på flere moduler fra samme produkt. Velg et tekstil i panelet under rommet for å oppdatere alle samtidig. Hver modul beholder sin egen form.</p><p><b>Gjenåpning og redigering:</b> Modeller som allerede står i rommet lastes før bibliotekets forhåndsvisninger. Klikk en gang til på valgt møbel, vegg eller gulv for å lukke menyen og fjerne markeringen. Designsammenligning er fjernet.</p></details></li><li><details><summary><b>1.4.1 · 5. november 2026</b><span>Tydeligere meny, avrundede knapper og flytting mellom rom.</span></summary><p><b>Flytting mellom rom:</b> Dra møbelet mot den andre siden av en innervegg. Når det er plass til hele møbelet på den andre siden, hopper det over. Hvis det fortsatt treffer veggen, blir det stående på nærmeste ledige side. Dette fungerer også når flere møbler flyttes sammen.</p><p><b>Enklere meny:</b> Alle handlingene i nedtrekksmenyen har både ikon og navn. Ikoner og tekst følger hver sin faste kolonne, med lik høyde og avstand på alle radene.</p><p><b>Visning og musepeker:</b> Kontrollknappene over rommet har avrundede hjørner. En egen svart pil og hånd viser hvor du peker og hva du kan trykke på. Tekstfelt, dragging og mål beholder passende pekere.</p></details></li><li><details><summary><b>1.5 · 5. november 2026</b><span>Flere 3D-formater og standard dører og vinduer.</span></summary><p><b>DWG:</b> Leser 3D-flater og polygonmodeller, blant annet Arena fra LK Hjelle. Velg DWG-arkivet under produktet og deretter ønsket modell. Modellen leses i bakgrunnen og mellomlagres på enheten.</p><p><b>Flere filtyper:</b> PLY, 3MF, AMF og VTK er lagt til. SKP, IFC, DXF, STEP, IGES, 3DM, GLB/glTF, FBX, OBJ, 3DS, DAE og STL kan fortsatt brukes. DXF må ha 3D-geometri.</p><p><b>Filer som må eksporteres:</b> Revit (RVT/RFA), Navisworks (NWD/NWC), Archicad (LCF/GSM) og DWG med ACIS-solider krever eksport til et støttet format. Filvalget forklarer dette og viser alternative filer for samme produkt når de finnes.</p><p><b>Dører og vinduer:</b> Vanlige modulstørrelser med utvendige karmmål. «Placeholder» er fjernet. Innerdør M9×21 er 88,6 × 208,9 cm og vindu M12×12 er 118,8 × 118,8 cm.</p></details></li><li><details><summary><b>1.5.1 · 5. november 2026</b><span>Ett klikk for produkter med én modell.</span></summary><p>Produkter med én modell går rett til plassering. En ZIP med én unik modell åpnes uten ekstra filvalg. Hvis arkivet inneholder flere modeller eller moduler, får du fortsatt velge. Når du har valgt en modell, starter plasseringen direkte.</p></details></li><li><details><summary><b>1.5.2 · 6. november 2026</b><span>Eget favicon for romplanleggeren.</span></summary><p>NOVOOI-symbolet har en liten gul prikk i fargen #EEFC9B, slik at fanen er lettere å skille fra nettbutikken.</p></details></li><li><details><summary><b>1.6 · 6. november 2026</b><span>Felles materialbibliotek for hele modellen.</span></summary><p>Velg ett materiale på hele møbelet, uansett filtype. Biblioteket har ekte Vidar 333- og valnøtt-teksturer, samt tydelig merkede generiske materialer. Shift-marker flere møbler for å endre alle samtidig. Valgene lagres med designet og beholdes når en sofamodul byttes. Visningsmaterialet endrer ikke nettbutikkvariant eller pris.</p></details></li><li><details><summary><b>1.7 · 6. november 2026</b><span>Produktstyrte materialvarianter og fotografiske treteksturer.</span></summary><p>Materialvalgene hentes fra produktets egne nettbutikkvarianter og følger tilgjengelige kombinasjoner. Et materialvalg oppdaterer produktvarianten og prisen. Ved flervalg vises bare felles materialvarianter. Den genererte eiketeksturen er erstattet av fotografiske PBR-kart. Biblioteket dekker flere treslag, tekstiler, skinn, metaller, stein og glass. Ukjente fargekoder vises nøytralt og merkes som manglende materialprøve.</p></details></li><li><details open><summary><b>1.8 · 11. november 2026</b><span>Romvisning fra kant til kant og ryddigere produktvalg.</span></summary><p>Romvisningen fyller flaten under toppmenyen. Sidepanelene ligger over visningen, og Møbler-knappen åpner og lukker katalogen. Produktarkiver viser brukbare modeller med miniatyrbilde og mål. Enkeltfiler får også forhåndsvisning når produktet åpnes. Bekreftet uleselige filer skjules, og valg av modell lager ingen ekstra katalograd. Prisene er midlertidig skjult. Bruk Se i nettbutikk for å åpne produktsiden.</p></details></li><li><details><summary><b>1.8.1 · 11. november 2026</b><span>Heymat-matter fra leverandørens teksturfiler.</span></summary><p>Sand, Sjø, Strå og Stein kan plasseres i begge størrelser. Romplanleggeren bruker målene og teksturbildet fra leverandørarkivet til å lage en enkel, målrett modell.</p></details></li><li><details><summary><b>1.8.2 · 11. november 2026</b><span>Heymat-mønster som reagerer på romlyset.</span></summary><p>Heymat-mattene får jevn tekstilfarge og riller med dybde beregnet fra produsentens mønster. Romlyset belyser relieffet og den fine teksturstrukturen. Tidligere importerte matter oppdateres når modellen lastes.</p></details></li><li><details><summary><b>1.8.15 · 12. november 2026</b><span>Heymat Zen, kompakt flervalg, diskrete mål og produktrettelser.</span></summary><ul><li>Heymat Zen finnes i Beige, Grey og Black, med tre mønstre i 45 × 45 cm. Flisene snapper kant mot kant. Du kan duplisere en flis til en ledig side eller bytte mønster etter plassering.</li><li>Farger og rillemønstre følger produktbildene. Flisene har en matt fibertekstur, smale skjøter og dype riller som er lettere å se i romlyset.</li><li>Flisene tilpasses ved veggflaten. Ved en innervegg vises delen på åpent gulv forbi veggenden. Når en liten rotasjon blokkeres, prøver knappen 90 grader i samme retning.</li><li>Flervalgsmenyen tar mindre plass. Produktmarkeringen blir stående når du drar for å rotere kameraet.</li><li>Cyclop 405 kan plasseres med en modell basert på produsentens mål og bilder. Superdupertube vises med matt pappfarge på røret.</li><li>Katalogen og startrommet viser ekte produkter, dører og vinduer. Eksempelobjekter i tidligere lagrede rom vises fortsatt.</li><li>Produktmål vises i produktpanelet til høyre. Avstands- og veggmål vises som enkel tekst uten bakgrunn eller glød. Klikk på et avstandsmål for å skrive direkte på samme sted. Målelinjer og tall ligger bak menyene. Flytting av dører og vinduer beholder den valgte lysstemningen.</li><li>Tonning &amp; Stryn-modeller får en hvitoljet eikeoverflate der CAD-filen mangler materialer. Hvitoljet eik er lysnet og årringene er mykere for å ligge nærmere butikkbildene. Originale detaljer og valgte nettbutikkvarianter beholdes.</li><li>Dal Entréskap vises med en modell på 55 × 40 × 135 cm. Dørene kan vises i sort, gult, grått og blått uavhengig av treverket.</li><li>I 3D kan småting plasseres på møbeloverflater eller på gulvet under. Hold Alt for å velge gulvet når en bordplate er i veien.</li></ul></details></li></ol><small class="note">Versjon 1.0–1.3 samler tidligere oppdateringer.</small>`)}
+function openSettings(){showDesignDialog('Innstillinger',`<h3>Versjonshistorikk</h3><p>Velg en versjon for å se hva som er endret og hvordan det fungerer.</p><ol class="changelog"><li><details><summary><b>1.0 · 31. oktober 2026</b><span>Rom i 2D og 3D, møbler, materialer og lagring.</span></summary><p>Rom i 2D og 3D, møbler, vegger, gulv og lagring.</p></details></li><li><details><summary><b>1.1 · 1. november 2026</b><span>Lyst tema, enklere menyer og kortere introduksjon.</span></summary><p>Lyst NOVOOI-tema og logo, tydeligere rutenett, færre eksempelmøbler. Produktkontur vises bare ved markering.</p><p>Forenklet snapping og «I rommet». Fjernet plasskontroll og egen objektmeny. Kortere introduksjon.</p></details></li><li><details><summary><b>1.2 · 2. november 2026</b><span>Drive, publisering, raskere bibliotek og bedre redigering.</span></summary><p>Menyer åpnes over rommet. Nye rom opprettes direkte uten skjema. Ryddigere «I rommet» uten eksempelvarer og unødvendige tips.</p><p>Slett veggpunkter med Delete/Backspace. Ny veggmarkering bevarer fargene. Rettet markering av fargeprøver.</p><p>GitHub- og Cloudflare-publisering, felles Drive-bibliotek, mellomlagring, SketchUp-støtte og automatiske forhåndsvisninger. Menyvalg beholdes under synk. Vipp importerte modeller og fest nærmeste side til veggen.</p><p>Lagring, deling, kameravinkler, bildeeksport, flervalg, mål og lyskontroller.</p></details></li><li><details><summary><b>1.3 · 3. november 2026</b><span>Produkt-ID, riktige kategorier og priser, ekte materialpiloter.</span></summary><p>Produkt-ID kobler Drive til WooCommerce-kategorier, varianter og priser i NOK. Filer uten treff og feil modelltilknytning skjules. Materialpiloter med ekte Vidar 333 og valnøtt.</p></details></li><li><details><summary><b>1.4 · 5. november 2026</b><span>Samlede filer, modulsofaer, felles variantvalg og ny typografi.</span></summary><p>Ett produktkort med filvalg og skjulte duplikater. Modulvalg bytter modell for modulsofaer med matchende filer, og moduler fester seg sammen. Innervegger stopper møbler.</p><p>Felles variantvalg for markerte produkter, rommets modeller lastes først, og et nytt klikk opphever markering. Firkantede ikonknapper, NOVOOI-favicon og Season Sans. Gazpacho brukes bare i store hovedtitler.</p><p><b>Bruk av modulsofaer:</b> Åpne produktkortet og velg filtypen du vil bruke. Valget «Modul» bytter mellom for eksempel hjørne- og midtmodul. Tekstil og andre valg beholdes. Hvis filnavnet er uklart, velger du riktig fil under «Modellfiler for moduler».</p><p><b>Felles variantvalg:</b> Hold Shift og klikk på flere moduler fra samme produkt. Velg et tekstil i panelet under rommet for å oppdatere alle samtidig. Hver modul beholder sin egen form.</p><p><b>Gjenåpning og redigering:</b> Modeller som allerede står i rommet lastes før bibliotekets forhåndsvisninger. Klikk en gang til på valgt møbel, vegg eller gulv for å lukke menyen og fjerne markeringen. Designsammenligning er fjernet.</p></details></li><li><details><summary><b>1.4.1 · 5. november 2026</b><span>Tydeligere meny, avrundede knapper og flytting mellom rom.</span></summary><p><b>Flytting mellom rom:</b> Dra møbelet mot den andre siden av en innervegg. Når det er plass til hele møbelet på den andre siden, hopper det over. Hvis det fortsatt treffer veggen, blir det stående på nærmeste ledige side. Dette fungerer også når flere møbler flyttes sammen.</p><p><b>Enklere meny:</b> Alle handlingene i nedtrekksmenyen har både ikon og navn. Ikoner og tekst følger hver sin faste kolonne, med lik høyde og avstand på alle radene.</p><p><b>Visning og musepeker:</b> Kontrollknappene over rommet har avrundede hjørner. En egen svart pil og hånd viser hvor du peker og hva du kan trykke på. Tekstfelt, dragging og mål beholder passende pekere.</p></details></li><li><details><summary><b>1.5 · 5. november 2026</b><span>Flere 3D-formater og standard dører og vinduer.</span></summary><p><b>DWG:</b> Leser 3D-flater og polygonmodeller, blant annet Arena fra LK Hjelle. Velg DWG-arkivet under produktet og deretter ønsket modell. Modellen leses i bakgrunnen og mellomlagres på enheten.</p><p><b>Flere filtyper:</b> PLY, 3MF, AMF og VTK er lagt til. SKP, IFC, DXF, STEP, IGES, 3DM, GLB/glTF, FBX, OBJ, 3DS, DAE og STL kan fortsatt brukes. DXF må ha 3D-geometri.</p><p><b>Filer som må eksporteres:</b> Revit (RVT/RFA), Navisworks (NWD/NWC), Archicad (LCF/GSM) og DWG med ACIS-solider krever eksport til et støttet format. Filvalget forklarer dette og viser alternative filer for samme produkt når de finnes.</p><p><b>Dører og vinduer:</b> Vanlige modulstørrelser med utvendige karmmål. «Placeholder» er fjernet. Innerdør M9×21 er 88,6 × 208,9 cm og vindu M12×12 er 118,8 × 118,8 cm.</p></details></li><li><details><summary><b>1.5.1 · 5. november 2026</b><span>Ett klikk for produkter med én modell.</span></summary><p>Produkter med én modell går rett til plassering. En ZIP med én unik modell åpnes uten ekstra filvalg. Hvis arkivet inneholder flere modeller eller moduler, får du fortsatt velge. Når du har valgt en modell, starter plasseringen direkte.</p></details></li><li><details><summary><b>1.5.2 · 6. november 2026</b><span>Eget favicon for romplanleggeren.</span></summary><p>NOVOOI-symbolet har en liten gul prikk i fargen #EEFC9B, slik at fanen er lettere å skille fra nettbutikken.</p></details></li><li><details><summary><b>1.6 · 6. november 2026</b><span>Felles materialbibliotek for hele modellen.</span></summary><p>Velg ett materiale på hele møbelet, uansett filtype. Biblioteket har ekte Vidar 333- og valnøtt-teksturer, samt tydelig merkede generiske materialer. Shift-marker flere møbler for å endre alle samtidig. Valgene lagres med designet og beholdes når en sofamodul byttes. Visningsmaterialet endrer ikke nettbutikkvariant eller pris.</p></details></li><li><details><summary><b>1.7 · 6. november 2026</b><span>Produktstyrte materialvarianter og fotografiske treteksturer.</span></summary><p>Materialvalgene hentes fra produktets egne nettbutikkvarianter og følger tilgjengelige kombinasjoner. Et materialvalg oppdaterer produktvarianten og prisen. Ved flervalg vises bare felles materialvarianter. Den genererte eiketeksturen er erstattet av fotografiske PBR-kart. Biblioteket dekker flere treslag, tekstiler, skinn, metaller, stein og glass. Ukjente fargekoder vises nøytralt og merkes som manglende materialprøve.</p></details></li><li><details open><summary><b>1.8 · 11. november 2026</b><span>Romvisning fra kant til kant og ryddigere produktvalg.</span></summary><p>Romvisningen fyller flaten under toppmenyen. Sidepanelene ligger over visningen, og Møbler-knappen åpner og lukker katalogen. Produktarkiver viser brukbare modeller med miniatyrbilde og mål. Enkeltfiler får også forhåndsvisning når produktet åpnes. Bekreftet uleselige filer skjules, og valg av modell lager ingen ekstra katalograd. Prisene er midlertidig skjult. Bruk Se i nettbutikk for å åpne produktsiden.</p></details></li><li><details><summary><b>1.8.1 · 11. november 2026</b><span>Heymat-matter fra leverandørens teksturfiler.</span></summary><p>Sand, Sjø, Strå og Stein kan plasseres i begge størrelser. Romplanleggeren bruker målene og teksturbildet fra leverandørarkivet til å lage en enkel, målrett modell.</p></details></li><li><details><summary><b>1.8.2 · 11. november 2026</b><span>Heymat-mønster som reagerer på romlyset.</span></summary><p>Heymat-mattene får jevn tekstilfarge og riller med dybde beregnet fra produsentens mønster. Romlyset belyser relieffet og den fine teksturstrukturen. Tidligere importerte matter oppdateres når modellen lastes.</p></details></li><li><details><summary><b>1.8.15 · 12. november 2026</b><span>Heymat Zen, kompakt flervalg, diskrete mål og produktrettelser.</span></summary><ul><li>Heymat Zen finnes i Beige, Grey og Black, med tre mønstre i 45 × 45 cm. Flisene snapper kant mot kant. Du kan duplisere en flis til en ledig side eller bytte mønster etter plassering.</li><li>Farger og rillemønstre følger produktbildene. Flisene har en matt fibertekstur, smale skjøter og dype riller som er lettere å se i romlyset.</li><li>Flisene tilpasses ved veggflaten. Ved en innervegg vises delen på åpent gulv forbi veggenden. Når en liten rotasjon blokkeres, prøver knappen 90 grader i samme retning.</li><li>Flervalgsmenyen tar mindre plass. Produktmarkeringen blir stående når du drar for å rotere kameraet.</li><li>Cyclop 405 kan plasseres med en modell basert på produsentens mål og bilder. Superdupertube vises med matt pappfarge på røret.</li><li>Katalogen og startrommet viser ekte produkter, dører og vinduer. Eksempelobjekter i tidligere lagrede rom vises fortsatt.</li><li>Produktmål vises i produktpanelet til høyre. Avstands- og veggmål vises som enkel tekst uten bakgrunn eller glød. Klikk på et avstandsmål for å skrive direkte på samme sted. Målelinjer og tall ligger bak menyene. Flytting av dører og vinduer beholder den valgte lysstemningen.</li><li>Tonning &amp; Stryn-modeller får en hvitoljet eikeoverflate der CAD-filen mangler materialer. Hvitoljet eik er lysnet og årringene er mykere for å ligge nærmere butikkbildene. Originale detaljer og valgte nettbutikkvarianter beholdes.</li><li>Dal Entréskap vises med en modell på 55 × 40 × 135 cm. Dørene kan vises i sort, gult, grått og blått uavhengig av treverket.</li><li>I 3D kan småting plasseres på møbeloverflater eller på gulvet under. Hold Alt for å velge gulvet når en bordplate er i veien.</li></ul></details></li><li><details><summary><b>1.8.16 · 13. november 2026</b><span>Riktig retning og farger på Northern-lamper.</span></summary><p>Vegglamper monteres etter veggfestet. Bruk rotasjonsknappene for å dreie en lampe på veggen. Northern-modeller som mangler materialfarger får produktfarge fra katalogen og viser valgte fargevarianter.</p></details></li></ol><small class="note">Versjon 1.0–1.3 samler tidligere oppdateringer.</small>`)}
 function labelHeaderMenu(){const rows=[['#designLibrary','folder','Mine design'],['#newPlan','new','Opprett nytt rom'],['#viewMenu','view','Visninger og presentasjon'],['#workspaceSettings','settings','Innstillinger'],['#helpBtn','help','Hjelp og snarveier'],['#restartTutorial','tour','Kom i gang'],['.backup-action','download','Sikkerhetskopi'],['#ownerFeedback','feedback','Tilbakemeldinger']];const put=(button,icon,label)=>{if(!button)return;button.innerHTML=(icon==='settings'?workspaceIcon('settings'):uiIcon(icon))+'<span class="menu-label">'+label+'</span>';button.title=label;button.setAttribute('aria-label',label)};for(const[selector,icon,label]of rows)put($('#headerMenu '+selector),icon,label);$('#headerMenu').querySelectorAll('.edit-only').forEach(b=>{if(b.textContent.includes('Åpne visningsfil'))put(b,'file','Åpne visningsfil');else if(b.textContent.includes('Start'))put(b,'home','Start')})}
 function setupBrandWorkspace(){const style=document.createElement('style');style.textContent='.st-top #sceneLighting,.st-top .tools .ibtn,#snap{width:40px;height:40px;min-width:40px;max-width:40px;padding:8px;border-radius:var(--control-radius,8px)}.header-menu{width:270px;max-width:calc(100vw - 24px);gap:2px;padding:8px}.header-menu .ibtn{display:grid;grid-template-columns:20px minmax(0,1fr);align-items:center;justify-content:initial;column-gap:12px;width:100%;min-height:40px;height:auto;padding:10px 12px;text-align:left;font-size:13px;line-height:20px}.header-menu #ownerFeedback:not([hidden]){display:grid!important}.header-menu .ibtn>svg{display:block;width:20px;height:20px;margin:0}.header-menu .ibtn>.menu-label{display:block!important;min-width:0;text-align:left;line-height:20px}.st-top #sceneLighting svg,#snap svg{width:22px;height:22px}.product-family{margin:0 0 10px;border:1px solid var(--line);background:var(--panel)}.product-family summary{display:flex;align-items:center;gap:12px;padding:12px;cursor:pointer;list-style:none}.product-family summary::-webkit-details-marker{display:none}.product-family summary b,.product-family summary small{display:block}.product-family summary small{color:var(--muted);font-size:11px}.product-photo{width:76px;height:76px;flex:none;background:var(--panel2);display:grid;place-items:center}.product-photo img{width:100%;height:100%;object-fit:contain}.family-chevron{margin-left:auto}.product-family details[open] .family-chevron{transform:rotate(180deg)}.product-files{border-top:1px solid var(--line);padding:8px;display:grid;gap:4px}.file-choice{display:flex;align-items:center;gap:10px;width:100%;text-align:left;padding:10px;border:1px solid var(--line);background:var(--panel);color:var(--ink);cursor:pointer;font:inherit}.file-choice:hover{background:var(--panel2)}.file-choice>span:nth-child(2){flex:1;min-width:0}.file-choice b,.file-choice small{display:block;overflow-wrap:anywhere}.file-choice small{font-size:11px;color:var(--muted)}.file-format{font-size:10px;padding:5px;background:var(--panel2);min-width:34px;text-align:center}.shared-variants{display:flex;gap:12px;flex-basis:100%;padding-top:8px;border-top:1px solid var(--line)}.module-mappings label{display:grid;gap:5px;margin-top:10px;font-size:12px}.shared-variants label{display:grid;gap:4px;flex:1;font-size:12px}.changelog{padding:0;list-style:none}.changelog li{border-bottom:1px solid var(--line)}.changelog summary{padding:12px 0;cursor:pointer;display:grid;gap:4px;list-style:none}.changelog summary b{font-size:13px}.changelog summary span{font-size:12px;color:var(--muted)}.changelog details[open] summary b{text-decoration:underline;text-underline-offset:3px}.changelog p{margin:0 0 10px;font-size:12px}.st-top .ibtn svg{width:22px;height:22px}';document.head.appendChild(style);const settings=document.createElement('button');settings.className='ibtn';settings.id='workspaceSettings';settings.title='Innstillinger og versjonshistorikk';settings.setAttribute('aria-label',settings.title);settings.innerHTML=workspaceIcon('settings');$('#helpBtn').before(settings);settings.onclick=openSettings;const iconOnly=(selector,label,markup)=>{const b=$(selector);if(b){b.title=label;b.setAttribute('aria-label',label);b.innerHTML=markup}};iconOnly('#viewMenu','Visninger og presentasjon','▣');iconOnly('#designLibrary','Mine design','▦');iconOnly('#saveDesign','Lagre design','▣');iconOnly('#shareDesign','Del design','↗');iconOnly('#newPlan','Opprett nytt rom','＋');iconOnly('#snap','Snapping',workspaceIcon('snap'));labelHeaderMenu();}
 setupBrandWorkspace();
