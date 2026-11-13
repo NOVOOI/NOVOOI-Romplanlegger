@@ -18,10 +18,31 @@
  },{...wood('oak-smoked','Røkt eik','oak-veneer-01',[1.83,1.83]),tint:'#a48972'},wood('oak-black','Sort eik','black-oak-veneer'),wood('ash','Ask','ash-veneer'),wood('cherry','Kirsebær','cherry-veneer'),wood('teak','Teak','teak-veneer'),wood('walnut-smoked','Røkt valnøtt','smoked-walnut-veneer'));
  for(const[id,name,color,roughness,metalness,group]of[['steel','Stål','#b2b5b5',.36,1,'Metall'],['brass','Messing','#bba064',.35,1,'Metall'],['copper','Kobber','#b97b57',.35,1,'Metall'],['bronze','Bronse','#826143',.4,1,'Metall'],['aluminium','Aluminium','#bfc2c1',.4,1,'Metall'],['glass','Glass','#d9e1df',.12,0,'Glass'],['marble-white','Lys marmor','#ddd9cf',.3,0,'Stein'],['marble-dark','Mørk marmor','#373737',.3,0,'Stein'],['leather-brown','Brunt skinn','#76513b',.55,0,'Skinn'],['leather-black','Sort skinn','#222222',.5,0,'Skinn'],['leather-natural','Natur skinn','#ba9167',.6,0,'Skinn'],['fabric-green','Grønt stoff','#606d53',1,0,'Tekstil'],['fabric-blue','Blått stoff','#4f667d',1,0,'Tekstil'],['fabric-red','Rødt stoff','#8a4b46',1,0,'Tekstil'],['fabric-white','Lyst stoff','#dfd9cd',1,0,'Tekstil']])entries.push({id,name,group,color,roughness,metalness,...(group==='Tekstil'?{pattern:'weave',tile:[.15,.15]}:{}),...(id==='glass'?{transparent:true,opacity:.38}:{}),source:'Tilnærmet '+name.toLowerCase()+' · produsentens materialprøve mangler'});
  for(const[id,name,color]of[['blue-matte','Blå','#49677f'],['green-matte','Grønn','#5c6b52'],['red-matte','Rød','#944e45'],['grey-matte','Grå','#878986'],['beige-matte','Beige','#c2b298'],['brown-matte','Brun','#73503c'],['yellow-matte','Gul','#cab35e'],['orange-matte','Oransje','#bf754b'],['pink-matte','Rosa','#bc9293'],['purple-matte','Lilla','#79637f']])entries.push({id,name,group:'Farge',color,roughness:.65,source:'Tilnærmet '+name.toLowerCase()+' · produsentens fargeprøve mangler'});
+ // Colors sampled from the LK Hjelle swatch photos. Surface detail is simulated.
+ const hjelleFinishes=[
+  ['hjelle-bardal-220','Bardal 220','Tekstil','#b6b2aa',.97,'weave',.05],
+  ['hjelle-vintage-cognac','Vintage Cognac','Skinn','#935932',.49,'leather',.06],
+  ['hjelle-hemsen-sand','Hemsen Anilin Sand','Skinn','#8d6e4c',.59,'leather',.06],
+  ['hjelle-dunes-dark','Dunes Dark Brown','Skinn','#3c312a',.78,'leather',.06],
+  ['hjelle-prescott-black','Prescott Sort','Skinn','#171815',.5,'leather',.06],
+  ['hjelle-oak-natural','Lakkert eik','Tre','#b89a73',.57],
+  ['hjelle-oak-smoked','Røkt eik','Tre','#665044',.63],
+  ['hjelle-oak-black','Sortlakkert eik','Tre','#111111',.53]
+ ];
+ for(const [id,name,group,color,roughness,grain,size] of hjelleFinishes){
+  entries.push({id,name,group,color,roughness,grain,tile:size?[size,size]:null,
+   bumpScale:grain==='leather'?.00012:.00022,source:'LK Hjelle · tilnærmet overflate'});
+ }
  const norm=s=>String(s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/ø/g,'o').replace(/æ/g,'ae').toLowerCase().replace(/[_-]+/g,' ').replace(/\s+/g,' ').trim();
  const materialAttribute=/tekstil|trekk|stoff|fabric|uphol|leather|skinn|treverk|treslag|material|finish|overflate|wood|farge|colou?r|understell/;
  function recipe(attribute,value){const t=norm(value),a=norm(attribute),has=r=>r.test(t);let id;
-  if(has(/vidar(?:\s*4)?[\s/:-]*0?333\b/))id='vidar-333';
+  if(has(/\bbardal 220\b/))id='hjelle-bardal-220';
+  else if(has(/cognac.*vintage|vintage.*cognac/))id='hjelle-vintage-cognac';
+  else if(has(/hemsen.*sand|sand.*hemsen/))id='hjelle-hemsen-sand';
+  else if(has(/dunes.*(?:dark brown|morkebrun)/))id='hjelle-dunes-dark';
+  else if(has(/prescott.*(?:sort|black)|(?:sort|black).*prescott/))id='hjelle-prescott-black';
+  else if(has(/kanvas|canvas/)&&has(/\beik\b|\boak\b/))id=has(/sort|black/)?'hjelle-oak-black':has(/rokt|smoked/)?'hjelle-oak-smoked':'hjelle-oak-natural';
+  else if(has(/vidar(?:\s*4)?[\s/:-]*0?333\b/))id='vidar-333';
   else if(has(/valnott|walnut/))id=has(/rokt|smoked|dark/)?'walnut-smoked':'walnut';
   else if(/treverk|treslag|wood/.test(a)&&has(/hvitoljet|white oil/))id='oak-white';
   else if(/treverk|treslag|wood/.test(a)&&has(/oljet natur|ubehandlet|natural oil/))id='oak-light';
@@ -30,13 +51,12 @@
   else if(has(/krom|chrome/))id='chrome';else if(has(/messing|brass/))id='brass';else if(has(/kobber|copper/))id='copper';else if(has(/bronse|bronze/))id='bronze';else if(has(/alumin/))id='aluminium';else if(has(/\bstal\b|\bsteel\b|inox/))id='steel';
   else if(has(/glass|clear|transparent/))id='glass';else if(has(/marmor|marble|travertin|stein|stone/))id=has(/sort|black|dark|marquina/)?'marble-dark':'marble-white';
   else if(has(/skinn|leather|anilin|dunes|sorensen|sahara|prescott|cognac vintage|vintage cognac/))id=has(/sort|black/)?'leather-black':has(/natur|natural|sand|cognac|tan/)?'leather-natural':'leather-brown';
-  else if(has(/\bbardal 220\b/))id='fabric-white';
   else if(/tekstil|trekk|stoff|fabric|uphol/.test(a)||has(/vidar|mylla|hallingdal|remix|steelcut|fiord|sunniva|boucle|velour|velvet|wool|ull|cotton|bomull|linen|\blin\b/))id=has(/sort|black|charcoal|anthracite/)?'fabric-dark':has(/gronn|green|olive/)?'fabric-green':has(/bla|blue|navy/)?'fabric-blue':has(/rod|red|burgundy/)?'fabric-red':has(/hvit|white|ivory/)?'fabric-white':has(/beige|sand|natur|cream/)?'fabric-sand':'fabric-grey';
   else if(has(/sort|svart|black/))id='black-matte';else if(has(/hvit|white|ivory/))id='white-matte';
   else if(has(/bla|blue|navy/))id='blue-matte';else if(has(/gronn|green|olive/))id='green-matte';else if(has(/rod|red|burgundy/))id='red-matte';else if(has(/gra|grey|gray/))id='grey-matte';else if(has(/beige|sand|cream/))id='beige-matte';else if(has(/brun|brown|cognac/))id='brown-matte';else if(has(/gul|yellow|mustard/))id='yellow-matte';else if(has(/oransje|orange/))id='orange-matte';else if(has(/rosa|pink/))id='pink-matte';else if(has(/lilla|purple/))id='purple-matte';
   else if(materialAttribute.test(a))return {id:'neutral',name:value,group:'Materiale',color:'#bcb9b2',roughness:.65,source:'Materialet finnes i nettbutikken. Ingen verifisert tekstur eller fargeprøve ennå; vises nøytralt.'};
   else return null;
-  const base=lookup.get(id);return {...base,...(has(/cognac vintage|vintage cognac/)?{color:'#a8663f'}:has(/dunes.*(?:dark brown|morkebrun)/)?{color:'#493229'}:has(/sand.*hemsen/)?{color:'#c4a88e'}:{}),base:id,...(has(/oljet|oiled/)&&base.group==='Tre'?{roughness:.5}:has(/lakk|lacquer/)&&base.group==='Tre'?{roughness:.32}:{}),...(id==='vidar-333'?{}:{source:base.source+' · tilnærmet visning av nettbutikkvarianten'})};
+  const base=lookup.get(id);return {...base,base:id,...(has(/oljet|oiled/)&&base.group==='Tre'?{roughness:.5}:has(/lakk|lacquer/)&&base.group==='Tre'?{roughness:.32}:{}),...(id==='vidar-333'?{}:{source:base.source+' · tilnærmet visning av nettbutikkvarianten'})};
  }
  function variantId(attribute,value){return 'variant:'+encodeURIComponent(JSON.stringify([attribute,value]))}
  function get(id){if(lookup.has(id))return lookup.get(id);if(typeof id!=='string'||!id.startsWith('variant:')||id.length>1600)return null;try{const pair=JSON.parse(decodeURIComponent(id.slice(8)));if(!Array.isArray(pair)||pair.length!==2||pair.some(x=>typeof x!=='string'||x.length>300))return null;const e=recipe(...pair);return e?{...e,id,name:pair[1],attribute:pair[0],value:pair[1]}:null}catch{return null}}
@@ -47,8 +67,8 @@
  function selected(shop,selection={}){return choices(shop,selection).find(e=>selection[e.attribute]===e.value)||choices(shop,selection).find(e=>!e.variantAttribute)||null}
  const lookup=new Map(entries.map(e=>[e.id,Object.freeze(e)])),textures=new Map(),pending=new Map();
  function texture(file,color){const key=file+'|'+color;if(textures.has(key))return textures.get(key);const T=root.THREE;let resolve,reject;const task=new Promise((a,b)=>{resolve=a;reject=b}),t=new T.TextureLoader().load('materials/'+file,()=>resolve(t),undefined,e=>reject(e));t.flipY=false;t.wrapS=t.wrapT=T.RepeatWrapping;t.encoding=color?T.sRGBEncoding:T.LinearEncoding;t.anisotropy=4;textures.set(key,t);pending.set(key,task);task.catch(()=>{textures.delete(key);pending.delete(key)});return t}
- function pattern(kind){const key='pattern:'+kind;if(textures.has(key))return textures.get(key);const T=root.THREE,c=document.createElement('canvas');c.width=c.height=128;const ctx=c.getContext('2d'),pixels=ctx.createImageData(128,128);let seed=7123;for(let y=0;y<128;y++)for(let x=0;x<128;x++){seed=(Math.imul(seed,1664525)+1013904223)>>>0;const grain=kind==='wood'?Math.sin(x*.3+Math.sin(y*.035)*2)*12:((x%4<2?8:-8)+(y%4<2?5:-5));const n=Math.max(180,Math.min(255,230+grain+(seed/4294967296-.5)*12)),i=(y*128+x)*4;pixels.data[i]=pixels.data[i+1]=pixels.data[i+2]=n;pixels.data[i+3]=255}ctx.putImageData(pixels,0,0);const t=new T.CanvasTexture(c);t.wrapS=t.wrapT=T.RepeatWrapping;t.encoding=T.sRGBEncoding;t.anisotropy=4;textures.set(key,t);return t}
- function maps(e){return{map:e.texture?texture(e.texture,true):e.pattern?pattern(e.pattern):null,normalMap:e.normal?texture(e.normal,false):null,roughnessMap:e.rough?texture(e.rough,false):null}}
+ function pattern(kind){const key='pattern:'+kind;if(textures.has(key))return textures.get(key);const T=root.THREE,c=document.createElement('canvas');c.width=c.height=128;const ctx=c.getContext('2d'),pixels=ctx.createImageData(128,128);let seed=7123;for(let y=0;y<128;y++)for(let x=0;x<128;x++){seed=(Math.imul(seed,1664525)+1013904223)>>>0;const grain=kind==='leather'?4*Math.sin(x*2*Math.PI/8+2*Math.sin(y*2*Math.PI/16))+3*Math.cos(y*2*Math.PI/8+x*2*Math.PI/16):kind==='wood'?Math.sin(x*.3+Math.sin(y*.035)*2)*12:((x%4<2?8:-8)+(y%4<2?5:-5));const n=Math.max(180,Math.min(255,230+grain+(seed/4294967296-.5)*12)),i=(y*128+x)*4;pixels.data[i]=pixels.data[i+1]=pixels.data[i+2]=n;pixels.data[i+3]=255}ctx.putImageData(pixels,0,0);const t=new T.CanvasTexture(c);t.wrapS=t.wrapT=T.RepeatWrapping;t.encoding=T.sRGBEncoding;t.anisotropy=4;textures.set(key,t);return t}
+ function maps(e){return{map:e.texture?texture(e.texture,true):e.pattern?pattern(e.pattern):null,normalMap:e.normal?texture(e.normal,false):null,roughnessMap:e.rough?texture(e.rough,false):null,bumpMap:e.grain?pattern(e.grain):null,bumpScale:e.bumpScale??1}}
  async function ready(ids){for(const id of new Set(ids||[])){const e=get(id);if(e)maps(e)}await Promise.all([...pending.values()])}
  /* Use metre-space box projection so texture scale does not depend on source format or UVs. */
  function project(mesh,tile){const T=root.THREE,source=mesh.geometry,geo=source.index?source.toNonIndexed():source.clone(),positions=geo.getAttribute('position'),uv=new Float32Array(positions.count*2),a=new T.Vector3(),b=new T.Vector3(),c=new T.Vector3(),n=new T.Vector3(),ab=new T.Vector3(),ac=new T.Vector3();
@@ -69,7 +89,7 @@
  }
  function apply(model,id,onReady,filter){const e=get(id);if(!e)return false;
   const targets=[];model.traverse(mesh=>{if(mesh.isMesh&&(!filter||filter(mesh)))targets.push(mesh)});if(!targets.length)return false;const T=root.THREE,m=new T.MeshStandardMaterial({color:e.texture?(e.tint||'#ffffff'):e.color,roughness:e.roughness,metalness:e.metalness||0,side:T.DoubleSide,...maps(e)});m.color.convertSRGBToLinear().multiplyScalar(e.brightness??1);if(m.normalScale)m.normalScale.setScalar(e.normalStrength??1);if(e.transparent){m.transparent=true;m.opacity=e.opacity??.4;m.depthWrite=false}m.name='NOVOOI · '+e.name;model.updateMatrixWorld(true);const oldGeometries=new Set(),oldMaterials=new Set();model.userData.ownedMaterials=model.userData.ownedMaterials||[];model.userData.ownedMaterials.push(m);model.userData.ownedGeometries=model.userData.ownedGeometries||[];
-  targets.forEach(mesh=>{if(!model.userData.shared)for(const material of(Array.isArray(mesh.material)?mesh.material:[mesh.material]))oldMaterials.add(material);if(m.map&&mesh.geometry?.getAttribute('position')){const source=mesh.geometry;mesh.geometry=project(mesh,e.tile);model.userData.ownedGeometries.push(mesh.geometry);if(!model.userData.shared)oldGeometries.add(source)}mesh.material=m});for(const g of oldGeometries)g.dispose();for(const material of oldMaterials)material.dispose();if(onReady)Promise.all([...pending.values()]).then(onReady).catch(onReady);return true;
+  targets.forEach(mesh=>{if(!model.userData.shared)for(const material of(Array.isArray(mesh.material)?mesh.material:[mesh.material]))oldMaterials.add(material);if((m.map||m.bumpMap)&&mesh.geometry?.getAttribute('position')){const source=mesh.geometry;mesh.geometry=project(mesh,e.tile);model.userData.ownedGeometries.push(mesh.geometry);if(!model.userData.shared)oldGeometries.add(source)}mesh.material=m});for(const g of oldGeometries)g.dispose();for(const material of oldMaterials)material.dispose();if(onReady)Promise.all([...pending.values()]).then(onReady).catch(onReady);return true;
  }
  root.NovooiSurfaceLibrary=Object.freeze({entries:Object.freeze(entries),get,ready,apply,project,recipe,choices,selected,variantId,catalogueFinish,untexturedLightMesh});
 })(globalThis);
