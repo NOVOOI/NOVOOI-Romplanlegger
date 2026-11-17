@@ -47,6 +47,7 @@
   else if(/treverk|treslag|wood/.test(a)&&has(/hvitoljet|white oil/))id='oak-white';
   else if(/treverk|treslag|wood/.test(a)&&has(/oljet natur|ubehandlet|natural oil/))id='oak-light';
   else if(has(/\beik\b|\boak\b/))id=has(/sort|svart|black/)?'oak-black':has(/rokt|smoked/)?'oak-smoked':has(/hvit|white|bleach|soap/)?'oak-white':'oak-light';
+  else if(has(/^(?:cherry red|kirsebaerrod)$/))return {id:'cherry-red',name:value,group:'Farge',color:'#622f3a',roughness:.57,source:'Kirsebærrød · tilnærmet visning av nettbutikkvarianten'};
   else if(has(/\bask\b|\bash\b/))id='ash';else if(has(/teak/))id='teak';else if(has(/kirsebaer|cherry/))id='cherry';
   else if(has(/krom|chrome/))id='chrome';else if(has(/messing|brass/))id='brass';else if(has(/kobber|copper/))id='copper';else if(has(/bronse|bronze/))id='bronze';else if(has(/alumin/))id='aluminium';else if(has(/\bstal\b|\bsteel\b|inox/))id='steel';
   else if(has(/glass|clear|transparent/))id='glass';else if(has(/marmor|marble|travertin|stein|stone/))id=has(/sort|black|dark|marquina/)?'marble-dark':'marble-white';
