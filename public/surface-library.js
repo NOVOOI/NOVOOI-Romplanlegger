@@ -11,6 +11,7 @@
   {id:'white-matte',name:'Matt hvit',group:'Ensfarget og metall',color:'#eeeae3',roughness:.85,source:'Generisk matt overflate'},
   {id:'chrome',name:'Krom',group:'Ensfarget og metall',color:'#d9d9d9',roughness:.18,metalness:1,source:'Generisk blankt metall'}
  ];
+ entries.push({id:'1001af-wood',name:'1001 AF · treverk',group:'Tre',color:'#79503b',roughness:.42,pattern:'krobo-oak',tile:[1,.25],source:'1001 AF · tilpasset produktbildet'},{id:'1001af-leather',name:'1001 AF · mørkt skinn',group:'Skinn',color:'#231a17',roughness:.38,source:'1001 AF · tilpasset produktbildet'});
  const wood=(id,name,asset,tile=[1,1],roughness=.5)=>({id,name,group:'Tre',color:'#ffffff',roughness,texture:asset+'-color.jpg',normal:asset+'-normal.jpg',rough:asset+'-roughness.jpg',normalStrength:.2,tile,source:name+' · fotografisk referanse fra Poly Haven (CC0)'});
  entries.push({
   ...wood('oak-white','Hvitoljet eik','white-oak-veneer',[.5,.5]),
