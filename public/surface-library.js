@@ -18,6 +18,13 @@
  },{...wood('oak-smoked','Røkt eik','oak-veneer-01',[1.83,1.83]),tint:'#a48972'},wood('oak-black','Sort eik','black-oak-veneer'),wood('ash','Ask','ash-veneer'),wood('cherry','Kirsebær','cherry-veneer'),wood('teak','Teak','teak-veneer'),wood('walnut-smoked','Røkt valnøtt','smoked-walnut-veneer'));
  for(const[id,name,color,roughness,metalness,group]of[['steel','Stål','#b2b5b5',.36,1,'Metall'],['brass','Messing','#bba064',.35,1,'Metall'],['copper','Kobber','#b97b57',.35,1,'Metall'],['bronze','Bronse','#826143',.4,1,'Metall'],['aluminium','Aluminium','#bfc2c1',.4,1,'Metall'],['glass','Glass','#d9e1df',.12,0,'Glass'],['marble-white','Lys marmor','#ddd9cf',.3,0,'Stein'],['marble-dark','Mørk marmor','#373737',.3,0,'Stein'],['leather-brown','Brunt skinn','#76513b',.55,0,'Skinn'],['leather-black','Sort skinn','#222222',.5,0,'Skinn'],['leather-natural','Natur skinn','#ba9167',.6,0,'Skinn'],['fabric-green','Grønt stoff','#606d53',1,0,'Tekstil'],['fabric-blue','Blått stoff','#4f667d',1,0,'Tekstil'],['fabric-red','Rødt stoff','#8a4b46',1,0,'Tekstil'],['fabric-white','Lyst stoff','#dfd9cd',1,0,'Tekstil']])entries.push({id,name,group,color,roughness,metalness,...(group==='Tekstil'?{pattern:'weave',tile:[.15,.15]}:{}),...(id==='glass'?{transparent:true,opacity:.38}:{}),source:'Tilnærmet '+name.toLowerCase()+' · produsentens materialprøve mangler'});
  for(const[id,name,color]of[['blue-matte','Blå','#49677f'],['green-matte','Grønn','#5c6b52'],['red-matte','Rød','#944e45'],['grey-matte','Grå','#878986'],['beige-matte','Beige','#c2b298'],['brown-matte','Brun','#73503c'],['yellow-matte','Gul','#cab35e'],['orange-matte','Oransje','#bf754b'],['pink-matte','Rosa','#bc9293'],['purple-matte','Lilla','#79637f']])entries.push({id,name,group:'Farge',color,roughness:.65,source:'Tilnærmet '+name.toLowerCase()+' · produsentens fargeprøve mangler'});
+ entries.push(
+  {id:'krobo-oak',name:'Krobo eik',group:'Tre',color:'#dbc29b',roughness:.57,pattern:'krobo-oak',tile:[2,.45],source:'Krobo eik · tilpasset produktbildet'},
+  {id:'fjord-blue',name:'Fjordfiesta blå',group:'Farge',color:'#243d68',roughness:.37},
+  {id:'fjord-graphite',name:'Grafitt',group:'Farge',color:'#434444',roughness:.5},
+  {id:'fjord-natural-weave',name:'Naturflett',group:'Tekstil',color:'#b7a287',roughness:.93,grain:'weave',bumpScale:.00035,tile:[.07,.07]},
+  {id:'fjord-green-weave',name:'Grønn snorflett',group:'Tekstil',color:'#424936',roughness:.93,grain:'weave',bumpScale:.00035,tile:[.07,.07]}
+ );
  // Colors sampled from the LK Hjelle swatch photos. Surface detail is simulated.
  const hjelleFinishes=[
   ['hjelle-bardal-220','Bardal 220','Tekstil','#b6b2aa',.97,'weave',.05],
@@ -69,7 +76,29 @@
  const lookup=new Map(entries.map(e=>[e.id,Object.freeze(e)])),textures=new Map(),pending=new Map();
  function texture(file,color){const key=file+'|'+color;if(textures.has(key))return textures.get(key);const T=root.THREE;let resolve,reject;const task=new Promise((a,b)=>{resolve=a;reject=b}),t=new T.TextureLoader().load('materials/'+file,()=>resolve(t),undefined,e=>reject(e));t.flipY=false;t.wrapS=t.wrapT=T.RepeatWrapping;t.encoding=color?T.sRGBEncoding:T.LinearEncoding;t.anisotropy=4;textures.set(key,t);pending.set(key,task);task.catch(()=>{textures.delete(key);pending.delete(key)});return t}
  function pattern(kind){const key='pattern:'+kind;if(textures.has(key))return textures.get(key);const T=root.THREE,c=document.createElement('canvas');c.width=c.height=128;const ctx=c.getContext('2d'),pixels=ctx.createImageData(128,128);let seed=7123;for(let y=0;y<128;y++)for(let x=0;x<128;x++){seed=(Math.imul(seed,1664525)+1013904223)>>>0;const grain=kind==='leather'?4*Math.sin(x*2*Math.PI/8+2*Math.sin(y*2*Math.PI/16))+3*Math.cos(y*2*Math.PI/8+x*2*Math.PI/16):kind==='wood'?Math.sin(x*.3+Math.sin(y*.035)*2)*12:((x%4<2?8:-8)+(y%4<2?5:-5));const n=Math.max(180,Math.min(255,230+grain+(seed/4294967296-.5)*12)),i=(y*128+x)*4;pixels.data[i]=pixels.data[i+1]=pixels.data[i+2]=n;pixels.data[i+3]=255}ctx.putImageData(pixels,0,0);const t=new T.CanvasTexture(c);t.wrapS=t.wrapT=T.RepeatWrapping;t.encoding=T.sRGBEncoding;t.anisotropy=4;textures.set(key,t);return t}
- function maps(e){return{map:e.texture?texture(e.texture,true):e.pattern?pattern(e.pattern):null,normalMap:e.normal?texture(e.normal,false):null,roughnessMap:e.rough?texture(e.rough,false):null,bumpMap:e.grain?pattern(e.grain):null,bumpScale:e.bumpScale??1}}
+ function kroboGrain(){
+  const key='krobo-oak';
+  if(textures.has(key))return textures.get(key);
+  const canvas=document.createElement('canvas');
+  canvas.width=1024;canvas.height=256;
+  const ctx=canvas.getContext('2d'),image=ctx.createImageData(canvas.width,canvas.height);
+  for(let y=0;y<canvas.height;y++)for(let x=0;x<canvas.width;x++){
+   const curve=y+1.2*Math.sin(x*.005)+.5*Math.sin(x*.013+y*.02);
+   const grain=2*Math.sin(curve*.8)+1.5*Math.sin(curve*2.7)+.8*Math.sin(curve*6.2);
+   const value=246+grain;
+   const at=(y*canvas.width+x)*4;
+   image.data[at]=image.data[at+1]=image.data[at+2]=value;
+   image.data[at+3]=255;
+  }
+  ctx.putImageData(image,0,0);
+  const texture=new root.THREE.CanvasTexture(canvas);
+  texture.wrapS=texture.wrapT=root.THREE.RepeatWrapping;
+  texture.encoding=root.THREE.sRGBEncoding;
+  texture.anisotropy=4;
+  textures.set(key,texture);
+  return texture;
+ }
+ function maps(e){return{map:e.texture?texture(e.texture,true):e.pattern==='krobo-oak'?kroboGrain():e.pattern?pattern(e.pattern):null,normalMap:e.normal?texture(e.normal,false):null,roughnessMap:e.rough?texture(e.rough,false):null,bumpMap:e.grain?pattern(e.grain):null,bumpScale:e.bumpScale??1}}
  async function ready(ids){for(const id of new Set(ids||[])){const e=get(id);if(e)maps(e)}await Promise.all([...pending.values()])}
  /* Use metre-space box projection so texture scale does not depend on source format or UVs. */
  function project(mesh,tile){const T=root.THREE,source=mesh.geometry,geo=source.index?source.toNonIndexed():source.clone(),positions=geo.getAttribute('position'),uv=new Float32Array(positions.count*2),a=new T.Vector3(),b=new T.Vector3(),c=new T.Vector3(),n=new T.Vector3(),ab=new T.Vector3(),ac=new T.Vector3();
