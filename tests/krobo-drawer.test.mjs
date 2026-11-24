@@ -23,3 +23,16 @@ test('Krobo cushion has three padded channels and stitching within its advertise
  assert.equal(model.obj.children.filter(m=>m.isMesh).length,4);
  assert.ok(model.obj.children.find(m=>m.name==='Krobo stitching').geometry.getAttribute('position').count>100);
 });
+test('cushion stitches cannot steal clicks from the exposed bench, including cloned cushions',()=>{
+ const c=vm.createContext({console});vm.runInContext(fs.readFileSync(new URL('../public/vendor/three.min.js',import.meta.url),'utf8'),c);const T=c.THREE;
+ Object.assign(c,{mat:(color,roughness)=>new T.MeshStandardMaterial({color,roughness}),col:color=>new T.Color(color),add:(g,geo,m,x,y,z)=>{const mesh=new T.Mesh(geo,m);mesh.position.set(x,y,z);g.add(mesh);return mesh}});
+ vm.runInContext(html.slice(html.indexOf('function rr('),html.indexOf('function mat(',html.indexOf('function rr('))),c);
+ vm.runInContext(html.slice(html.indexOf('const isKroboBench='),html.indexOf('function kroboAnchor(')),c);
+ vm.runInContext(html.slice(html.indexOf('function visibleForPicking('),html.indexOf('function pick(')),c);
+ const cushion=c.kroboCushionModel().obj.clone(true),bench=new T.Mesh(new T.BoxGeometry(1.5,.05,.37),new T.MeshBasicMaterial());bench.position.y=-.025;
+ cushion.updateMatrixWorld(true);bench.updateMatrixWorld(true);
+ const ray=new T.Raycaster(new T.Vector3(.4,1,0),new T.Vector3(0,-1,0));
+ const hits=ray.intersectObjects([cushion,bench],true);assert.ok(hits.some(h=>h.object.isLineSegments));
+ assert.equal(hits.find(c.visibleItemHit).object,bench);
+ ray.set(new T.Vector3(0,1,0),new T.Vector3(0,-1,0));assert.notEqual(ray.intersectObjects([cushion,bench],true).find(c.visibleItemHit).object,bench);
+});
