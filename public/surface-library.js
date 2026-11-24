@@ -21,6 +21,7 @@
   {id:'noble-black',name:'Noble Black Leather',group:'Skinn',color:'#252729',roughness:.44,grain:'leather',bumpScale:.00007,tile:[.045,.045],source:'Farge tilpasset produktbildet · illustrert skinnstruktur'}
  );
  entries.push(
+ {id:'pavilion-chair-metal',name:'Pavilion · sort stål',group:'Metall',color:'#17191a',roughness:.3,metalness:.65,source:'Sortlakkert stål · tilpasset Pavilion-produktbildene'},
  {id:'meantime-ecriture-0210',name:'Ecriture 0210',group:'Tekstil',color:'#ded8c6',roughness:1,grain:'weave',bumpScale:.00045,tile:[.025,.025],source:'Meantime AV30 · tilpasset nettbutikkens produktbilde, illustrert struktur'},
  {id:'meantime-fiord-0571',name:'Fiord 0571',group:'Tekstil',color:'#ad3c2e',roughness:1,grain:'weave',bumpScale:.00015,tile:[.035,.035],source:'Meantime AV31 · tilpasset nettbutikkens produktbilde, illustrert struktur'},
  {id:'meantime-warm-black',name:'Warm black',group:'Metall',color:'#292524',roughness:.36,metalness:.45},
