@@ -12,6 +12,14 @@
   {id:'chrome',name:'Krom',group:'Ensfarget og metall',color:'#d9d9d9',roughness:.18,metalness:1,source:'Generisk blankt metall'}
  ];
  entries.push({id:'1001af-wood',name:'1001 AF · treverk',group:'Tre',color:'#79503b',roughness:.42,pattern:'krobo-oak',tile:[1,.25],source:'1001 AF · tilpasset produktbildet'},{id:'1001af-leather',name:'1001 AF · mørkt skinn',group:'Skinn',color:'#231a17',roughness:.38,source:'1001 AF · tilpasset produktbildet'});
+ entries.push(
+  {id:'clay-0011',name:'Clay 0011',group:'Tekstil',color:'#bdb697',roughness:1,grain:'weave',bumpScale:.00016,tile:[.04,.04],source:'Farge tilpasset produktbildet · illustrert vevstruktur'},
+  {id:'clay-0014',name:'Clay 0014',group:'Tekstil',color:'#6c6f5e',roughness:1,grain:'weave',bumpScale:.00016,tile:[.04,.04],source:'Farge tilpasset produktbildet · illustrert vevstruktur'},
+  {id:'hallingdal-130',name:'Hallingdal 130',group:'Tekstil',color:'#b7b9b7',roughness:1,texture:'inland-hallingdal-130.jpg',grain:'weave',bumpScale:.00012,tile:[.14,.21],source:'&Tradition · Hallingdal 130-tekstur fra leverandørens Inland-modell'},
+  {id:'vidar-733',name:'Vidar 733',group:'Tekstil',color:'#58738c',roughness:1,grain:'weave',bumpScale:.00008,tile:[.06,.06],source:'Farge tilpasset produktbildet · illustrert struktur'},
+  {id:'noble-cognac',name:'Noble Cognac Leather',group:'Skinn',color:'#b88b5b',roughness:.46,grain:'leather',bumpScale:.00007,tile:[.045,.045],source:'Farge tilpasset produktbildet · illustrert skinnstruktur'},
+  {id:'noble-black',name:'Noble Black Leather',group:'Skinn',color:'#252729',roughness:.44,grain:'leather',bumpScale:.00007,tile:[.045,.045],source:'Farge tilpasset produktbildet · illustrert skinnstruktur'}
+ );
  const wood=(id,name,asset,tile=[1,1],roughness=.5)=>({id,name,group:'Tre',color:'#ffffff',roughness,texture:asset+'-color.jpg',normal:asset+'-normal.jpg',rough:asset+'-roughness.jpg',normalStrength:.2,tile,source:name+' · fotografisk referanse fra Poly Haven (CC0)'});
  entries.push({
   ...wood('oak-white','Hvitoljet eik','white-oak-veneer',[.5,.5]),
@@ -47,7 +55,13 @@
  const norm=s=>String(s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/ø/g,'o').replace(/æ/g,'ae').toLowerCase().replace(/[_-]+/g,' ').replace(/\s+/g,' ').trim();
  const materialAttribute=/tekstil|trekk|stoff|fabric|uphol|leather|skinn|treverk|treslag|material|finish|overflate|wood|farge|colou?r|understell/;
  function recipe(attribute,value){const t=norm(value),a=norm(attribute),has=r=>r.test(t);let id;
-  if(has(/\bbardal 220\b/))id='hjelle-bardal-220';
+  if(has(/\bclay[ -]*0*11\b/))id='clay-0011';
+  else if(has(/\bclay[ -]*0*14\b/))id='clay-0014';
+  else if(has(/hallingdal[ -]*0*130\b/))id='hallingdal-130';
+  else if(has(/vidar(?:\s*4)?[ -]*0*733\b/))id='vidar-733';
+  else if(has(/noble.*cognac|cognac.*noble/))id='noble-cognac';
+  else if(has(/noble.*black|black.*noble/))id='noble-black';
+  else if(has(/\bbardal 220\b/))id='hjelle-bardal-220';
   else if(has(/cognac.*vintage|vintage.*cognac/))id='hjelle-vintage-cognac';
   else if(has(/hemsen.*sand|sand.*hemsen/))id='hjelle-hemsen-sand';
   else if(has(/dunes.*(?:dark brown|morkebrun)/))id='hjelle-dunes-dark';
