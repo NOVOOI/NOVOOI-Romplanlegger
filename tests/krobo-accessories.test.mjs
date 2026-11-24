@@ -50,3 +50,12 @@ test('startup preserves the attachment while custom bench metadata is still load
  c.syncKroboAccessories();assert.equal(item.kroboBench,bench.u);assert.ok(item.surfaceY>0);
  products.set('bench',saved);bench.sel.Høyde='44 cm';c.syncKroboAccessories();assert.ok(Math.abs(item.surfaceY-43.4)<.001);
 });
+test('Krobo edges snap together only when furniture snapping is enabled',()=>{
+ const {c,bench}=context();c.snapPrefs={objects:false};
+ c.S.items.push({u:'neighbor',pid:'cushion',...c.kroboAnchor(bench,0)});
+ const moving={u:'moving',pid:'drawer'};
+ assert.equal(c.snapKroboAccessory(moving,148,120).kroboOffset,48);
+ c.snapPrefs.objects=true;
+ assert.equal(c.snapKroboAccessory(moving,148,120).kroboOffset,50);
+ assert.equal(c.snapKroboAccessory(moving,140,120).kroboOffset,40);
+});
