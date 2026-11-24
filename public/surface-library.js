@@ -20,6 +20,15 @@
   {id:'noble-cognac',name:'Noble Cognac Leather',group:'Skinn',color:'#b88b5b',roughness:.46,grain:'leather',bumpScale:.00007,tile:[.045,.045],source:'Farge tilpasset produktbildet · illustrert skinnstruktur'},
   {id:'noble-black',name:'Noble Black Leather',group:'Skinn',color:'#252729',roughness:.44,grain:'leather',bumpScale:.00007,tile:[.045,.045],source:'Farge tilpasset produktbildet · illustrert skinnstruktur'}
  );
+ entries.push(
+ {id:'meantime-ecriture-0210',name:'Ecriture 0210',group:'Tekstil',color:'#ded8c6',roughness:1,grain:'weave',bumpScale:.00045,tile:[.025,.025],source:'Meantime AV30 · tilpasset nettbutikkens produktbilde, illustrert struktur'},
+ {id:'meantime-fiord-0571',name:'Fiord 0571',group:'Tekstil',color:'#ad3c2e',roughness:1,grain:'weave',bumpScale:.00015,tile:[.035,.035],source:'Meantime AV31 · tilpasset nettbutikkens produktbilde, illustrert struktur'},
+ {id:'meantime-warm-black',name:'Warm black',group:'Metall',color:'#292524',roughness:.36,metalness:.45},
+ {id:'pavilion-black-top',name:'Black linoleum',group:'Linoleum',color:'#454746',roughness:.85},
+ {id:'pavilion-charcoal-top',name:'Charcoal linoleum',group:'Linoleum',color:'#77736b',roughness:.85},
+ {id:'pavilion-mushroom-top',name:'Mushroom linoleum',group:'Linoleum',color:'#d9d5cb',roughness:.85},
+ {id:'pavilion-black-wood',name:'Sort eik · Pavilion',group:'Tre',color:'#252625',roughness:.5,pattern:'krobo-oak',tile:[1.3,.3]}
+ );
  const wood=(id,name,asset,tile=[1,1],roughness=.5)=>({id,name,group:'Tre',color:'#ffffff',roughness,texture:asset+'-color.jpg',normal:asset+'-normal.jpg',rough:asset+'-roughness.jpg',normalStrength:.2,tile,source:name+' · fotografisk referanse fra Poly Haven (CC0)'});
  entries.push({
   ...wood('oak-white','Hvitoljet eik','white-oak-veneer',[.5,.5]),
@@ -55,7 +64,10 @@
  const norm=s=>String(s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/ø/g,'o').replace(/æ/g,'ae').toLowerCase().replace(/[_-]+/g,' ').replace(/\s+/g,' ').trim();
  const materialAttribute=/tekstil|trekk|stoff|fabric|uphol|leather|skinn|treverk|treslag|material|finish|overflate|wood|farge|colou?r|understell/;
  function recipe(attribute,value){const t=norm(value),a=norm(attribute),has=r=>r.test(t);let id;
-  if(has(/\bclay[ -]*0*11\b/))id='clay-0011';
+  if(has(/mushroom.*linoleum/))id='pavilion-mushroom-top';
+  else if(has(/charcoal\s*\/\s*(?:walnut|valnott)/))id='pavilion-charcoal-top';
+  else if(has(/black.*linoleum/))id='pavilion-black-top';
+  else if(has(/\bclay[ -]*0*11\b/))id='clay-0011';
   else if(has(/\bclay[ -]*0*14\b/))id='clay-0014';
   else if(has(/hallingdal[ -]*0*130\b/))id='hallingdal-130';
   else if(has(/vidar(?:\s*4)?[ -]*0*733\b/))id='vidar-733';
