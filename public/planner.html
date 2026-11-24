@@ -1255,7 +1255,7 @@ async function ensureKroboAccessory(kind){
     if(record.status!=='linked')throw Error('Tilbehøret er ikke tilgjengelig i nettbutikken akkurat nå');
     const shop=buildShop(record.product,record.variants||[]);shop.variantsLoaded=true;shop.at=record.at;shop.variantsAt=record.variantsAt;
     const model=id===64483?kroboCushionModel():kroboDrawerModel();
-    const rec={id:'krobo-accessory-'+id,productId:id,kroboNative:true,name:record.product.name,brand:'Fjordfiesta',
+    const rec={id:'krobo-accessory-'+id,productId:id,kroboNative:true,cv:CV,name:record.product.name,brand:'Fjordfiesta',
       fileName:id===64483?'Krobo Cushion.glb':kroboDrawerSource,unit:'m',zUp:'y',fit:1,mount:'floor',
       dims:{w:model.w,d:model.d,h:model.h},shop,linkStatus:'linked',catalogCat:shop.cat||'other'};
     registerCustom(rec,model,model.obj);await IDB.put(rec);return custom.get(rec.id);
@@ -4215,7 +4215,7 @@ setupBrandWorkspace();
    Models saved by older versions are converted once in the background. */
 (async()=>{if(READ_ONLY){await loadSharedDesign();return}await IDB.open();const savedCatalog=await IDB.get('drive-index','catalog');if(savedCatalog?.at>DS.at){DS.index=savedCatalog.index.filter(isModelFile);DS.at=savedCatalog.at}let recs=await IDB.all();
   const legacyArcs=recs.filter(r=>r.archive);for(const r of legacyArcs){if(r.drive&&String(r.id).startsWith('a_d_'))ARCS.set(r.drive,{id:r.id,mod:r.mod||'',ver:r.ver||1});await IDB.put(r,'arcs');await IDB.del(r.id,'models')}
-  recs=recs.filter(r=>!r.archive);const activePids=new Set(S.items.map(it=>it.pid));recs.sort((a,b)=>Number(activePids.has(b.id))-Number(activePids.has(a.id)));const ready=[],old=[];recs.forEach(r=>(r.cv===CV&&r.dims?ready:old).push(r));
+  recs=recs.filter(r=>!r.archive);const activePids=new Set(S.items.map(it=>it.pid));recs.sort((a,b)=>Number(activePids.has(b.id))-Number(activePids.has(a.id)));const ready=[],old=[];recs.forEach(r=>((r.kroboNative||r.cv===CV)&&r.dims?ready:old).push(r));
   ready.forEach(r=>{if(r.upsrc!=='user'&&!r.normalized&&['glb','gltf','skp','dae'].includes(extOf(partOf(r.entry||r.fileName).file))&&upOf(r.zUp)!=='y'){const old=upOf(r.zUp);if(old.endsWith('z'))[r.dims.d,r.dims.h]=[r.dims.h,r.dims.d];else if(old.endsWith('x'))[r.dims.w,r.dims.h]=[r.dims.h,r.dims.w];r.zUp='y';delete r.thumb;IDB.put(r)}if(!r.mount){r.mount=guessMount(r.name);r.flip=false}registerLazy(r)});
   syncItems();renderCatBody();renderSelbar();renderTotals();
   const startSync=async()=>{await loadActiveRoomModels();startCatalogPreviews();const config=await NOVOOI_LIBRARY.config();if(!config.driveConfigured)return;syncDrive(false);setInterval(()=>{if(document.visibilityState==='visible')syncDrive(false)},15*60*1000)};
