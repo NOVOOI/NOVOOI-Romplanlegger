@@ -5,7 +5,7 @@ test('Inland keeps separate named metal legs, and splits merged meshes by their 
  const c=setup(),T=c.THREE,group=new T.Group();
  const body=new T.BoxGeometry(1.8,.5,.9).translate(0,.45,0).toNonIndexed(),leg=new T.BoxGeometry(.06,.2,.7).translate(.65,.1,0).toNonIndexed();
  const merged=new T.BufferGeometry(),values=new Float32Array(body.getAttribute('position').array.length+leg.getAttribute('position').array.length);values.set(body.getAttribute('position').array);values.set(leg.getAttribute('position').array,body.getAttribute('position').array.length);merged.setAttribute('position',new T.BufferAttribute(values,3));
- group.add(new T.Mesh(merged,new T.MeshStandardMaterial()));
+ const fabric=new T.MeshStandardMaterial(),steel=new T.MeshStandardMaterial();fabric.name='_tradition_Hallingdal_130';steel.name='_tradition_Steel';group.add(new T.Mesh(merged,[fabric,steel]));
  const named=new T.Mesh(new T.BoxGeometry(.06,.2,.7),new T.MeshStandardMaterial());named.name='AV41_Leather_Legs';group.add(named);
  c.inlandParts(group);assert.equal(named.userData.inlandPart,'metal');
  assert.equal(group.children.filter(m=>m.userData.inlandPart==='metal').length,2);assert.equal(group.children.filter(m=>m.userData.inlandPart==='body').length,1);assert.equal(merged.index,null);
