@@ -14,6 +14,13 @@
       "source": "&Tradition Pavilion AV1, innebygd leverand\u00f8rtekstur i Drive-filen",
       "widthM": 0.3048,
       "heightM": 0.3048
+    },
+    {
+      "material": "Hallingdal 130",
+      "source": "&Tradition Inland sofa corner AV41 / Textile / H-130.png \u00b7 leverand\u00f8rens modellarkiv",
+      "widthM": 0.14,
+      "heightM": 0.21,
+      "note": "Illustrert fysisk skala, JPEG optimalisert til 512 piksler."
     }
   ],
   "assets": [
@@ -40,6 +47,12 @@
       "sha256": "ed5f970e7fbf6c99f12ec6a6e5946038cfe22ca851fc095ec3519fe25e2be3b3",
       "bytes": 431522,
       "payload": "vidar-0333-normal.json"
+    },
+    {
+      "file": "inland-hallingdal-130.jpg",
+      "sha256": "aef495db869b350adb1cbd6cff649e0c4f1e9511d78a511801aade8ab6c79070",
+      "bytes": 78053,
+      "payload": "inland-hallingdal-130.json"
     }
   ]
 }
