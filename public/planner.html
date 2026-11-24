@@ -1646,9 +1646,11 @@ function inlandParts(group){
   const bounds=new THREE.Box3().setFromObject(group),height=bounds.max.y-bounds.min.y,cut=bounds.min.y+Math.min(.24,height*.31);
   const meshes=[];group.traverse(m=>{if(m.isMesh)meshes.push(m)});
   for(const mesh of meshes){
-    const names=[mesh.name,...(Array.isArray(mesh.material)?mesh.material:[mesh.material]).map(m=>m?.name)].join(' ');
-    if(/leg|steel|alum|metal|understell/i.test(names)&&!/upholstery/i.test(names)){mesh.userData.inlandPart='metal';continue}
-    if(/upholstery|hallingdal|clay|vidar|leather/i.test(names)){mesh.userData.inlandPart='body';continue}
+    const materials=Array.isArray(mesh.material)?mesh.material:[mesh.material],names=materials.map(m=>m?.name).join(' ');
+    if(/leg|steel|alum|metal|understell/i.test(mesh.name)&&!/upholstery/i.test(mesh.name)){mesh.userData.inlandPart='metal';continue}
+    if(/upholstery/i.test(mesh.name)){mesh.userData.inlandPart='body';continue}
+    if(materials.length===1&&/steel|alum|metal/i.test(names)){mesh.userData.inlandPart='metal';continue}
+    if(materials.length===1&&/upholstery|hallingdal|clay|vidar|leather/i.test(names)){mesh.userData.inlandPart='body';continue}
     const source=mesh.geometry,geo=source.index?source.toNonIndexed():source.clone(),pos=geo.getAttribute('position');
     if(!pos){geo.dispose();continue}
     const body=[],metal=[],v=new THREE.Vector3();
