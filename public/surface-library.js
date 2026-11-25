@@ -30,6 +30,7 @@
  {id:'pavilion-mushroom-top',name:'Mushroom linoleum',group:'Linoleum',color:'#d9d5cb',roughness:.85},
  {id:'pavilion-black-wood',name:'Sort eik · Pavilion',group:'Tre',color:'#252625',roughness:.5,pattern:'krobo-oak',tile:[1.3,.3]}
  );
+ for(const[tone,color]of[['yellow','#edc82d'],['beige','#b79762'],['red','#bf2339']])entries.push({id:'matre-stripe-'+tone,name:'Matre · '+tone+' striper',group:'Tekstil',color:'#ffffff',roughness:1,pattern:'matre-'+tone,tile:[.22,.22],source:'Striper tilpasset Matres produktbilder · illustrert vevstruktur'},{id:'matre-solid-'+tone,name:'Matre · '+tone,group:'Tekstil',color,roughness:1,grain:'weave',bumpScale:.00008,tile:[.04,.04]});
  const wood=(id,name,asset,tile=[1,1],roughness=.5)=>({id,name,group:'Tre',color:'#ffffff',roughness,texture:asset+'-color.jpg',normal:asset+'-normal.jpg',rough:asset+'-roughness.jpg',normalStrength:.2,tile,source:name+' · fotografisk referanse fra Poly Haven (CC0)'});
  entries.push({
   ...wood('oak-white','Hvitoljet eik','white-oak-veneer',[.5,.5]),
@@ -89,7 +90,7 @@
   else if(has(/\bask\b|\bash\b/))id='ash';else if(has(/teak/))id='teak';else if(has(/kirsebaer|cherry/))id='cherry';
   else if(has(/krom|chrome/))id='chrome';else if(has(/messing|brass/))id='brass';else if(has(/kobber|copper/))id='copper';else if(has(/bronse|bronze/))id='bronze';else if(has(/alumin/))id='aluminium';else if(has(/\bstal\b|\bsteel\b|inox/))id='steel';
   else if(has(/glass|clear|transparent/))id='glass';else if(has(/marmor|marble|travertin|stein|stone/))id=has(/sort|black|dark|marquina/)?'marble-dark':'marble-white';
-  else if(has(/skinn|leather|laer|anilin|dunes|sorensen|sahara|prescott|cognac vintage|vintage cognac/))id=has(/sort|black/)?'leather-black':has(/natur|natural|sand|cognac|tan|lys brun|light brown/)?'leather-natural':'leather-brown';
+  else if(has(/skinn|leather|laer|anilin|dunes|sorensen|sahara|prescott|cognac vintage|vintage cognac/))id=has(/sort|svart|black/)?'leather-black':has(/natur|natural|sand|cognac|tan|lys brun|light brown/)?'leather-natural':'leather-brown';
   else if(/tekstil|trekk|stoff|fabric|uphol/.test(a)||has(/vidar|mylla|hallingdal|remix|steelcut|fiord|sunniva|boucle|velour|velvet|wool|ull|cotton|bomull|linen|\blin\b/))id=has(/sort|black|charcoal|anthracite/)?'fabric-dark':has(/gronn|green|olive/)?'fabric-green':has(/bla|blue|navy/)?'fabric-blue':has(/rod|red|burgundy/)?'fabric-red':has(/hvit|white|ivory/)?'fabric-white':has(/beige|sand|natur|cream/)?'fabric-sand':'fabric-grey';
   else if(has(/sort|svart|black/))id='black-matte';else if(has(/hvit|white|ivory/))id='white-matte';
   else if(has(/bla|blue|navy/))id='blue-matte';else if(has(/gronn|green|olive/))id='green-matte';else if(has(/rod|red|burgundy/))id='red-matte';else if(has(/gra|grey|gray/))id='grey-matte';else if(has(/beige|sand|cream/))id='beige-matte';else if(has(/brun|brown|cognac/))id='brown-matte';else if(has(/gul|yellow|mustard/))id='yellow-matte';else if(has(/oransje|orange/))id='orange-matte';else if(has(/rosa|pink/))id='pink-matte';else if(has(/lilla|purple/))id='purple-matte';
@@ -129,7 +130,14 @@
   textures.set(key,texture);
   return texture;
  }
- function maps(e){return{map:e.texture?texture(e.texture,true):e.pattern==='krobo-oak'?kroboGrain():e.pattern?pattern(e.pattern):null,normalMap:e.normal?texture(e.normal,false):null,roughnessMap:e.rough?texture(e.rough,false):null,bumpMap:e.grain?pattern(e.grain):null,bumpScale:e.bumpScale??1}}
+ function matreStripes(kind){
+  const key='stripe:'+kind;if(textures.has(key))return textures.get(key);
+  const canvas=document.createElement('canvas');canvas.width=256;canvas.height=128;
+  const ctx=canvas.getContext('2d'),im=ctx.createImageData(256,128),colors={yellow:[237,200,45],beige:[183,151,98],red:[191,35,57]},accent=colors[kind]||colors.beige;
+  for(let y=0;y<128;y++)for(let x=0;x<256;x++){const rgb=x<128?[228,216,193]:accent,n=((x*31+y*17)%13-6)*.55+(x%2?1:-1)+(y%2?1:-1),i=(y*256+x)*4;for(let c=0;c<3;c++)im.data[i+c]=rgb[c]+n;im.data[i+3]=255}
+  ctx.putImageData(im,0,0);const t=new root.THREE.CanvasTexture(canvas);t.wrapS=t.wrapT=root.THREE.RepeatWrapping;t.encoding=root.THREE.sRGBEncoding;t.anisotropy=8;textures.set(key,t);return t;
+ }
+ function maps(e){return{map:e.texture?texture(e.texture,true):e.pattern?.startsWith('matre-')?matreStripes(e.pattern.slice(6)):e.pattern==='krobo-oak'?kroboGrain():e.pattern?pattern(e.pattern):null,normalMap:e.normal?texture(e.normal,false):null,roughnessMap:e.rough?texture(e.rough,false):null,bumpMap:e.grain?pattern(e.grain):null,bumpScale:e.bumpScale??1}}
  async function ready(ids){for(const id of new Set(ids||[])){const e=get(id);if(e)maps(e)}await Promise.all([...pending.values()])}
  /* Use metre-space box projection so texture scale does not depend on source format or UVs. */
  function project(mesh,tile){const T=root.THREE,source=mesh.geometry,geo=source.index?source.toNonIndexed():source.clone(),positions=geo.getAttribute('position'),uv=new Float32Array(positions.count*2),a=new T.Vector3(),b=new T.Vector3(),c=new T.Vector3(),n=new T.Vector3(),ab=new T.Vector3(),ac=new T.Vector3();
