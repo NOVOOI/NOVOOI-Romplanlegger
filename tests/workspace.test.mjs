@@ -30,3 +30,7 @@ test('Zen snapping fills an open corner and rejects occupied positions',()=>{
   assert.ok(Math.hypot(snap.x-45,snap.z-45)<.0001);
   assert.equal(W.moduleSnap(tile(44,0),placed,14,candidate=>!placed.some(other=>W.penetration({...moving,...candidate},other))),null);
 });
+
+test('portfolio exports collapse by model across formats without mixing Futu and Futu Mesh',()=>{const f=(id,title)=>({id,title,productId:71518,brand:'HÅG'}),groups=W.sourceGroups([f('a','IFC (Futu).zip'),f('b','3DS HÅG Futu.zip'),f('c','OBJ HÅG Futu.zip'),f('d','DWG 2D (Futu).zip'),f('e','SketchUp (Futu Mesh).zip'),f('f','OBJ (Futu Mesh).zip')]);assert.equal(groups.length,2);assert.equal(groups.find(g=>g.label==='futu').files[0].id,'b');assert.equal(groups.find(g=>g.label==='futu mesh').files.length,2)});
+test('numbered export folders produce one Celi model group',()=>{const groups=W.sourceGroups(['3.DWG.zip','4.3DS.zip','7.SketchUp.zip'].map((title,i)=>({title,id:String(i),productId:71284,brand:'HÅG'})));assert.equal(groups.length,1);assert.equal(groups[0].label,'');assert.equal(W.sourceFormat(groups[0].files[0]),'3ds')});
+test('different module numbers, sizes, and product IDs are not duplicates',()=>{const groups=W.sourceGroups([{id:'a',productId:1,title:'Corner AV55.skp'},{id:'b',productId:1,title:'Middle AV54.skp'},{id:'c',productId:1,title:'Bench 150.3ds'},{id:'d',productId:1,title:'Bench 200.3ds'},{id:'e',productId:2,title:'Bench 150.3ds'}]);assert.equal(groups.length,5)});
