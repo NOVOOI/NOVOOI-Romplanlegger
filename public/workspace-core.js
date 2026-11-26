@@ -18,8 +18,30 @@
  function wallBox(w,height=300){const dx=w.b.x-w.a.x,dz=w.b.z-w.a.z;return{x:(w.a.x+w.b.x)/2,z:(w.a.z+w.b.z)/2,w:Math.hypot(dx,dz),d:w.t||12,rot:-Math.atan2(dz,dx)*180/Math.PI,bottom:0,top:height}}
  function penetration(a,b){if(a.top<=b.bottom||b.top<=a.bottom)return null;const axes=[a.rot,b.rot].flatMap(v=>{const r=v*Math.PI/180;return[[Math.cos(r),-Math.sin(r)],[Math.sin(r),Math.cos(r)]]});const radius=(o,x,z)=>{const r=o.rot*Math.PI/180;return Math.abs(x*Math.cos(r)-z*Math.sin(r))*o.w/2+Math.abs(x*Math.sin(r)+z*Math.cos(r))*o.d/2};let best=null;for(const[x,z]of axes){const signed=(a.x-b.x)*x+(a.z-b.z)*z,overlap=radius(a,x,z)+radius(b,x,z)-Math.abs(signed);if(overlap<=.05)return null;if(!best||overlap<best.depth){const sign=signed<0?-1:1;best={x:x*sign,z:z*sign,depth:overlap}}}return best}
  function moduleSnap(a,others,tolerance=14,canSnap=()=>true){let best=null;for(const b of others){const angle=Math.round((a.rot-b.rot)/90)*90+b.rot;if(Math.abs(angle-a.rot)>15)continue;const r=b.rot*Math.PI/180,c=Math.cos(r),s=Math.sin(r),dx=a.x-b.x,dz=a.z-b.z,x=dx*c-dz*s,z=dx*s+dz*c,turn=Math.round((angle-b.rot)/90)%2,aw=turn?a.d:a.w,ad=turn?a.w:a.d;for(const axis of['x','z']){const target=(axis==='x'?(aw+b.w):(ad+b.d))/2,side=(axis==='x'?x:z)<0?-1:1,nx=axis==='x'?side*target:0,nz=axis==='z'?side*target:0,dist=Math.hypot(x-nx,z-nz);if(dist<=tolerance&&(!best||dist<best.dist)){const candidate={dist,x:b.x+nx*c+nz*s,z:b.z-nx*s+nz*c,rot:angle};if(canSnap(candidate))best=candidate}}}return best&&{x:best.x,z:best.z,rot:best.rot}}
- // KEEEP is built on a 29 cm grid. Edge contact plus grid-aligned offset
- // permits a 58 cm back alongside either end of an 87 cm seat.
- function keeepSnap(a,others,tolerance=14){let best=null;for(const b of others){const angle=Math.round((a.rot-b.rot)/90)*90+b.rot;if(Math.abs(angle-a.rot)>15)continue;const r=b.rot*Math.PI/180,c=Math.cos(r),s=Math.sin(r),dx=a.x-b.x,dz=a.z-b.z,x=dx*c-dz*s,z=dx*s+dz*c,turn=Math.abs(Math.round((angle-b.rot)/90))%2,aw=turn?a.d:a.w,ad=turn?a.w:a.d;for(const axis of ['x','z']){const edge=(axis==='x'?aw+b.w:ad+b.d)/2,across=axis==='x'?z:x,span=axis==='x'?Math.abs(ad-b.d)/2:Math.abs(aw-b.w)/2;const offsets=[0,-span,span,Math.round(across/29)*29];for(const offset of offsets){if(Math.abs(offset)>(axis==='x'?(ad+b.d):(aw+b.w))/2-.1)continue;const nx=axis==='x'?(x<0?-1:1)*edge:offset,nz=axis==='z'?(z<0?-1:1)*edge:offset,dist=Math.hypot(x-nx,z-nz);if(dist>tolerance||best&&dist>=best.dist)continue;const next={x:b.x+nx*c+nz*s,z:b.z-nx*s+nz*c,rot:angle};if(others.some(o=>penetration({...a,...next,bottom:0,top:1},{...o,bottom:0,top:1})))continue;best={...next,dist};}}}if(!best)return null;return{x:best.x,z:best.z,rot:best.rot};}
+ // A 1 cm grid measured from the nearest module's edges, not its centre.
+ // Different module widths can therefore meet exactly and still slide freely.
+ function keeepSnap(a,others,tolerance=10){
+  const grid=1;let best=null,nearest=null;
+  for(const b of others){
+   const angle=Math.round((a.rot-b.rot)/90)*90+b.rot;if(Math.abs(angle-a.rot)>15)continue;
+   const r=b.rot*Math.PI/180,c=Math.cos(r),s=Math.sin(r),dx=a.x-b.x,dz=a.z-b.z,x=dx*c-dz*s,z=dx*s+dz*c,turn=Math.abs(Math.round((angle-b.rot)/90))%2,aw=turn?a.d:a.w,ad=turn?a.w:a.d;
+   const quant=(v,offset)=>offset+Math.round((v-offset)/grid)*grid;
+   const gx=quant(x,(b.w-aw)/2),gz=quant(z,(b.d-ad)/2),distance=Math.hypot(dx,dz);
+   if(!nearest||distance<nearest.distance)nearest={distance,x:b.x+gx*c+gz*s,z:b.z-gx*s+gz*c};
+   for(const axis of ['x','z']){
+    const edge=(axis==='x'?aw+b.w:ad+b.d)/2,across=axis==='x'?z:x,span=axis==='x'?Math.abs(ad-b.d)/2:Math.abs(aw-b.w)/2,offset=axis==='x'?gz:gx;
+    const limits=[0,-span,span],aligned=limits.reduce((v,n)=>Math.abs(n-across)<Math.abs(v-across)?n:v,limits[0]),tangent=Math.abs(aligned-across)<=3?aligned:offset;
+    if(Math.abs(tangent)>=(axis==='x'?(ad+b.d):(aw+b.w))/2-.05)continue;
+    const nx=axis==='x'?(x<0?-1:1)*edge:tangent,nz=axis==='z'?(z<0?-1:1)*edge:tangent,dist=Math.hypot(x-nx,z-nz);
+    if(dist>tolerance)continue;
+    const next={x:b.x+nx*c+nz*s,z:b.z-nx*s+nz*c,rot:angle};
+    if(others.some(o=>penetration({...a,...next,bottom:0,top:1},{...o,bottom:0,top:1})))continue;
+    const contacts=others.filter(o=>{const r=o.rot*Math.PI/180,c=Math.cos(r),s=Math.sin(r),dx=next.x-o.x,dz=next.z-o.z,x=dx*c-dz*s,z=dx*s+dz*c,turn=Math.abs(Math.round((angle-o.rot)/90))%2,w=turn?a.d:a.w,d=turn?a.w:a.d;return Math.abs(Math.abs(x)-(w+o.w)/2)<.06&&Math.abs(z)<(d+o.d)/2-.05||Math.abs(Math.abs(z)-(d+o.d)/2)<.06&&Math.abs(x)<(w+o.w)/2-.05}).length;
+    if(!best||contacts>best.contacts||contacts===best.contacts&&dist<best.dist)best={...next,dist,contacts};
+   }
+  }
+  if(best)return{x:best.x,z:best.z,rot:best.rot};
+  return nearest?{x:nearest.x,z:nearest.z}:{x:Math.round(a.x/grid)*grid,z:Math.round(a.z/grid)*grid};
+ }
  root.NovooiWorkspace={norm,format,stem,uniqueFiles,modelChoices,sourceLabel,sourceFormat,sourceGroups,family,moduleAttribute,moduleKind,moduleMatch,resolveModule,wallBox,penetration,moduleSnap,keeepSnap};
 })(globalThis);
