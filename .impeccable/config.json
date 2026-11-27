@@ -1,0 +1,44 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "flat-type-hierarchy",
+        "value": "*",
+        "files": [
+          ".impeccable/mocks/decision/assigned.html"
+        ],
+        "createdAt": "2026-11-27T17:53:39.117Z",
+        "reason": "assistant judgment: spent decision-page sketch, gitignored working material that never ships"
+      },
+      {
+        "rule": "flat-type-hierarchy",
+        "value": "*",
+        "files": [
+          ".impeccable/mocks/decision/model-pick.html"
+        ],
+        "createdAt": "2026-11-27T17:53:39.466Z",
+        "reason": "assistant judgment: spent decision-page sketch, gitignored working material that never ships"
+      },
+      {
+        "rule": "flat-type-hierarchy",
+        "value": "*",
+        "files": [
+          ".impeccable/mocks/decision/challenger-wayfinding.html"
+        ],
+        "createdAt": "2026-11-27T17:53:39.753Z",
+        "reason": "assistant judgment: spent decision-page sketch, gitignored working material that never ships"
+      },
+      {
+        "rule": "codex-grid-background",
+        "value": "*",
+        "files": [
+          ".impeccable/mocks/decision/assigned.html"
+        ],
+        "createdAt": "2026-11-27T17:53:40.045Z",
+        "reason": "assistant judgment: spent decision sketch; the grid depicts the plan's real measuring grid"
+      }
+    ]
+  }
+}

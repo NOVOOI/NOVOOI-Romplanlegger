@@ -1,0 +1,441 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-11-27T17:56:09.936045+00:00",
+  "title": "Design System: NOVOOI Romplanlegger",
+  "extensions": {
+    "colorMeta": {
+      "ink": {
+        "role": "primary",
+        "displayName": "Ink",
+        "canonical": "#17191A",
+        "tonalRamp": [
+          "#070808",
+          "#0C0C0D",
+          "#101212",
+          "#151617",
+          "#454748",
+          "#7F8081",
+          "#B9BABA",
+          "#E8E8E8"
+        ]
+      },
+      "ink-raised": {
+        "role": "primary",
+        "displayName": "Ink Raised",
+        "canonical": "#2B2E2F",
+        "tonalRamp": [
+          "#0D0E0E",
+          "#161718",
+          "#1E2021",
+          "#27292A",
+          "#555859",
+          "#8A8C8D",
+          "#BFC0C1",
+          "#EAEAEA"
+        ]
+      },
+      "ink-rule": {
+        "role": "primary",
+        "displayName": "Ink Rule",
+        "canonical": "#3A3E3F",
+        "tonalRamp": [
+          "#111313",
+          "#1D1F20",
+          "#292B2C",
+          "#343839",
+          "#616565",
+          "#939595",
+          "#C4C5C5",
+          "#EBECEC"
+        ]
+      },
+      "stone-plate": {
+        "role": "neutral",
+        "displayName": "Stone Plate",
+        "canonical": "#E4E6E1",
+        "tonalRamp": [
+          "#444544",
+          "#727370",
+          "#A0A19E",
+          "#CDCFCA",
+          "#E9EBE7",
+          "#F0F1EE",
+          "#F7F8F6",
+          "#FCFCFC"
+        ]
+      },
+      "page-white": {
+        "role": "neutral",
+        "displayName": "Page White",
+        "canonical": "#FAFAF8",
+        "tonalRamp": [
+          "#4B4B4A",
+          "#7D7D7C",
+          "#AFAFAE",
+          "#E1E1DF",
+          "#FBFBF9",
+          "#FCFCFB",
+          "#FEFEFD",
+          "#FEFEFE"
+        ]
+      },
+      "page-shade": {
+        "role": "neutral",
+        "displayName": "Page Shade",
+        "canonical": "#EEEFEB",
+        "tonalRamp": [
+          "#474847",
+          "#777876",
+          "#A7A7A4",
+          "#D6D7D4",
+          "#F1F2EF",
+          "#F6F6F4",
+          "#FAFAF9",
+          "#FDFDFD"
+        ]
+      },
+      "spot": {
+        "role": "secondary",
+        "displayName": "NOVOOI Spot",
+        "canonical": "#EEFC9B",
+        "tonalRamp": [
+          "#474C2F",
+          "#777E4E",
+          "#A7B06C",
+          "#D6E38C",
+          "#F1FDAF",
+          "#F6FDC8",
+          "#FAFEE1",
+          "#FDFFF5"
+        ]
+      },
+      "spot-pressed": {
+        "role": "secondary",
+        "displayName": "Spot Pressed",
+        "canonical": "#E3F28A",
+        "tonalRamp": [
+          "#444929",
+          "#727945",
+          "#9FA961",
+          "#CCDA7C",
+          "#E9F5A1",
+          "#F0F8BF",
+          "#F7FBDC",
+          "#FCFEF3"
+        ]
+      },
+      "spot-tint": {
+        "role": "secondary",
+        "displayName": "Spot Tint",
+        "canonical": "#F4F8DD",
+        "tonalRamp": [
+          "#494A42",
+          "#7A7C6E",
+          "#ABAE9B",
+          "#DCDFC7",
+          "#F6F9E4",
+          "#F9FBEC",
+          "#FCFDF5",
+          "#FEFEFC"
+        ]
+      },
+      "graphite-muted": {
+        "role": "neutral",
+        "displayName": "Graphite Muted",
+        "canonical": "#4C504A",
+        "tonalRamp": [
+          "#171816",
+          "#262825",
+          "#353834",
+          "#444843",
+          "#70736E",
+          "#9D9F9B",
+          "#C9CAC9",
+          "#EDEEED"
+        ]
+      },
+      "on-ink-muted": {
+        "role": "neutral",
+        "displayName": "On-Ink Muted",
+        "canonical": "#BFC3BC",
+        "tonalRamp": [
+          "#393B38",
+          "#60625E",
+          "#868884",
+          "#ACB0A9",
+          "#CCCFC9",
+          "#DCDEDA",
+          "#ECEDEB",
+          "#F9F9F8"
+        ]
+      },
+      "hairline": {
+        "role": "neutral",
+        "displayName": "Hairline",
+        "canonical": "#CDD0C9",
+        "tonalRamp": [
+          "#3E3E3C",
+          "#666864",
+          "#90928D",
+          "#B8BBB5",
+          "#D7D9D4",
+          "#E4E5E1",
+          "#F0F1EF",
+          "#FAFAFA"
+        ]
+      },
+      "metre-grid": {
+        "role": "neutral",
+        "displayName": "Metre Grid",
+        "canonical": "#B3B8AE",
+        "tonalRamp": [
+          "#363734",
+          "#5A5C57",
+          "#7D817A",
+          "#A1A69D",
+          "#C2C6BE",
+          "#D5D8D2",
+          "#E8EAE7",
+          "#F7F8F7"
+        ]
+      },
+      "danger": {
+        "role": "error",
+        "displayName": "Danger",
+        "canonical": "#A8261C",
+        "tonalRamp": [
+          "#320B08",
+          "#54130E",
+          "#761B14",
+          "#972219",
+          "#B95149",
+          "#CF8882",
+          "#E5BEBB",
+          "#F6E9E8"
+        ]
+      },
+      "warn": {
+        "role": "warning",
+        "displayName": "Warn",
+        "canonical": "#8A5A00",
+        "tonalRamp": [
+          "#291B00",
+          "#452D00",
+          "#613F00",
+          "#7C5100",
+          "#A17B33",
+          "#BFA473",
+          "#DCCEB2",
+          "#F3EEE6"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "plate-title": {
+        "displayName": "Plate title",
+        "purpose": "Room name in the plate caption; the only Gazpacho use (H1 .plate-title)."
+      },
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "Side-page and dialog headings (--t-l)."
+      },
+      "title": {
+        "displayName": "Title",
+        "purpose": "Masthead plan name, prices, start options (--t-m)."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Default text, buttons, tabs, caption figures (--t-s)."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Field labels, brand lines, counts, save state; sentence case (--t-xs)."
+      },
+      "key-number": {
+        "displayName": "Key number",
+        "purpose": "Numerals in key markers and key badges."
+      }
+    },
+    "shadows": [
+      {
+        "name": "lift",
+        "value": "0 8px 24px rgba(23,25,26,.14)",
+        "purpose": "Floating panels, menus, selection bar; always with a 1px ink border."
+      },
+      {
+        "name": "dialog",
+        "value": "0 24px 60px rgba(23,25,26,.28)",
+        "purpose": "Modal dialogs over a rgba(23,25,26,.5) scrim."
+      },
+      {
+        "name": "marker-seat",
+        "value": "0 1px 3px rgba(23,25,26,.22)",
+        "purpose": "Key markers over flooring textures."
+      }
+    ],
+    "motion": [
+      {
+        "name": "ui-ease",
+        "value": "160ms ease-out",
+        "purpose": "Background, border and colour transitions on controls."
+      },
+      {
+        "name": "press",
+        "value": "translateY(1px), 100ms ease-out",
+        "purpose": "Button press; removed under prefers-reduced-motion."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "phone-sm",
+        "value": "600px"
+      },
+      {
+        "name": "phone",
+        "value": "780px"
+      },
+      {
+        "name": "desktop",
+        "value": "781px"
+      },
+      {
+        "name": "compact-desktop",
+        "value": "1000px"
+      },
+      {
+        "name": "wide",
+        "value": "1100px"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Ink action button; pressed and primary states share the ink inversion.",
+      "html": "<button class=\"ds-btn\">Legg til produkter</button>",
+      "css": ".ds-btn{font-family:\"Season Sans\",sans-serif;background:var(--ink,#17191A);color:var(--panel,#FAFAF8);border:1px solid var(--ink,#17191A);border-radius:4px;min-height:36px;padding:8px 14px;font-size:13px;font-weight:600;line-height:20px;cursor:pointer;transition:background-color 160ms ease-out}.ds-btn:hover{background:#2B2E2F}.ds-btn:focus-visible{outline:2px solid #17191A;outline-offset:2px}.ds-btn:active{transform:translateY(1px)}"
+    },
+    {
+      "name": "Ghost Button",
+      "kind": "button",
+      "refersTo": "button-ghost",
+      "description": "Secondary action: page-white with hairline border that turns ink on hover.",
+      "html": "<button class=\"ds-btn-ghost\">Kopier liste</button>",
+      "css": ".ds-btn-ghost{font-family:\"Season Sans\",sans-serif;background:#FAFAF8;color:#17191A;border:1px solid #CDD0C9;border-radius:4px;min-height:36px;padding:8px 14px;font-size:13px;font-weight:600;cursor:pointer;transition:border-color 160ms ease-out}.ds-btn-ghost:hover{border-color:#17191A}.ds-btn-ghost:focus-visible{outline:2px solid #17191A;outline-offset:2px}"
+    },
+    {
+      "name": "Masthead with Save",
+      "kind": "nav",
+      "refersTo": "masthead",
+      "description": "Ink masthead: wordmark with spot dot, plan title, outlined ink buttons, Lagre in spot.",
+      "html": "<header class=\"ds-top\"><b class=\"ds-brand\">novooi</b><span class=\"ds-plan\">Stue, Grünerløkka<small>Utkast lagret på enheten</small></span><span style=\"flex:1\"></span><button class=\"ds-top-btn\">Møbler</button><button class=\"ds-save\">Lagre</button></header>",
+      "css": ".ds-top{font-family:\"Season Sans\",sans-serif;display:flex;align-items:center;gap:8px;height:64px;padding:0 16px;background:#17191A;color:#FAFAF8}.ds-brand{position:relative;font-size:22px;font-weight:700;margin-right:8px}.ds-brand::after{content:\"\";position:absolute;right:-9px;top:3px;width:7px;height:7px;border-radius:50%;background:#EEFC9B}.ds-plan{display:grid;border-left:1px solid #3A3E3F;padding-left:16px;margin-left:12px;font-size:15px;font-weight:500}.ds-plan small{font-size:11px;color:#BFC3BC;font-weight:400}.ds-top-btn{font-family:\"Season Sans\",sans-serif;background:transparent;color:#FAFAF8;border:1px solid #62676A;border-radius:4px;min-height:36px;padding:7px 10px;font-size:13px;cursor:pointer}.ds-top-btn:hover{border-color:#FAFAF8;background:#2B2E2F}.ds-save{font-family:\"Season Sans\",sans-serif;background:#EEFC9B;color:#17191A;border:1px solid #EEFC9B;border-radius:4px;min-height:36px;padding:7px 14px;font-size:13px;font-weight:600;cursor:pointer}.ds-save:hover{background:#E3F28A}.ds-top button:focus-visible{outline:2px solid #EEFC9B;outline-offset:2px}"
+    },
+    {
+      "name": "View Segmented Control",
+      "kind": "custom",
+      "refersTo": "tab-active",
+      "description": "2D/3D switch: ink-framed strip, pressed segment inverts to ink.",
+      "html": "<div class=\"ds-vseg\"><button aria-pressed=\"true\">2D</button><button aria-pressed=\"false\">3D</button></div>",
+      "css": ".ds-vseg{display:inline-flex;background:#FAFAF8;border:1px solid #17191A;border-radius:4px;overflow:hidden}.ds-vseg button{font-family:\"Season Sans\",sans-serif;border:0;border-radius:0;background:transparent;color:#17191A;padding:9px 16px;font-size:13px;font-weight:600;cursor:pointer}.ds-vseg button[aria-pressed=true]{background:#17191A;color:#FAFAF8}.ds-vseg button:focus-visible{outline:2px solid #17191A;outline-offset:-3px}"
+    },
+    {
+      "name": "Search Input",
+      "kind": "input",
+      "refersTo": "input-text",
+      "description": "Page-white field with hairline border; focus turns the border ink.",
+      "html": "<label class=\"ds-search\"><svg viewBox=\"0 0 24 24\" width=\"18\" height=\"18\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" aria-hidden=\"true\"><circle cx=\"10\" cy=\"10\" r=\"6\"/><path d=\"m15 15 6 6\"/></svg><input placeholder=\"Søk i produkter\"></label>",
+      "css": ".ds-search{display:flex;align-items:center;gap:8px;padding:0 12px;height:40px;background:#FAFAF8;border:1px solid #CDD0C9;border-radius:4px;color:#4C504A}.ds-search:focus-within{border-color:#17191A}.ds-search input{font-family:\"Season Sans\",sans-serif;flex:1;border:0;outline:none;background:transparent;font-size:13px;color:#17191A}"
+    },
+    {
+      "name": "Stage Tool Button",
+      "kind": "button",
+      "refersTo": "icon-button",
+      "description": "Square tool on the plate; active tools fill spot with an ink border.",
+      "html": "<button class=\"ds-tool\" aria-pressed=\"false\" aria-label=\"Zoom inn\"><svg viewBox=\"0 0 24 24\" width=\"18\" height=\"18\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\"><path d=\"M12 5v14M5 12h14\"/></svg></button><button class=\"ds-tool\" aria-pressed=\"true\" aria-label=\"Rutenett\"><svg viewBox=\"0 0 24 24\" width=\"18\" height=\"18\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\"><path d=\"M4 4h16v16H4zM4 12h16M12 4v16\"/></svg></button>",
+      "css": ".ds-tool{display:inline-grid;place-items:center;width:44px;height:44px;margin-right:6px;background:#FAFAF8;color:#17191A;border:1px solid #CDD0C9;border-radius:4px;cursor:pointer}.ds-tool:hover{border-color:#17191A}.ds-tool[aria-pressed=true]{background:#EEFC9B;border-color:#17191A}.ds-tool:focus-visible{outline:2px solid #17191A;outline-offset:2px}"
+    },
+    {
+      "name": "Key Marker and Key Row",
+      "kind": "custom",
+      "refersTo": "key-marker",
+      "description": "Signature: numbered plan marker matched to the numbered row in I rommet.",
+      "html": "<div class=\"ds-keydemo\"><span class=\"ds-km\">1</span><span class=\"ds-km on\">3</span></div><button class=\"ds-keyrow\" aria-pressed=\"true\"><span class=\"ds-kno\">3</span><span class=\"ds-kinfo\"><small>Egen modell</small><b>Testsofa</b><em>Original</em></span></button>",
+      "css": ".ds-keydemo{display:flex;gap:12px;padding:12px;background:#E4E6E1;margin-bottom:8px}.ds-km,.ds-kno{font-family:\"Season Sans\",sans-serif;width:24px;height:24px;display:grid;place-items:center;border-radius:50%;border:1.5px solid #17191A;background:#FAFAF8;color:#17191A;font-size:12px;font-weight:700;font-variant-numeric:tabular-nums;flex:none}.ds-km{box-shadow:0 1px 3px rgba(23,25,26,.22)}.ds-km.on{background:#17191A;color:#EEFC9B}.ds-keyrow{font-family:\"Season Sans\",sans-serif;display:flex;align-items:center;gap:12px;width:100%;padding:12px 4px;border:0;border-top:1px solid #17191A;border-bottom:1px solid #CDD0C9;background:transparent;text-align:left;color:#17191A;cursor:pointer}.ds-keyrow:hover{background:#EEEFEB}.ds-keyrow[aria-pressed=true]{background:#F4F8DD}.ds-keyrow[aria-pressed=true] .ds-kno{background:#EEFC9B}.ds-kinfo{display:grid;gap:2px}.ds-kinfo small,.ds-kinfo em{font-size:11px;color:#4C504A;font-style:normal}.ds-kinfo b{font-size:13px}.ds-keyrow:focus-visible{outline:2px solid #17191A;outline-offset:2px}"
+    },
+    {
+      "name": "Totals Footer",
+      "kind": "custom",
+      "refersTo": "totals-footer",
+      "description": "Ink bar closing the side page; count in spot, tabular, right aligned.",
+      "html": "<button class=\"ds-total\"><span>Handleliste</span><span class=\"ds-cnt\">3 stk</span></button>",
+      "css": ".ds-total{font-family:\"Season Sans\",sans-serif;display:flex;justify-content:space-between;align-items:center;width:100%;height:48px;padding:0 16px;border:0;border-radius:0;background:#17191A;color:#FAFAF8;font-size:13px;font-weight:600;cursor:pointer}.ds-total:hover{background:#2B2E2F}.ds-cnt{color:#EEFC9B;font-variant-numeric:tabular-nums}.ds-total:focus-visible{outline:2px solid #EEFC9B;outline-offset:-4px}"
+    }
+  ],
+  "narrative": {
+    "northStar": "Planplansje",
+    "overview": "The room is published as a plate in a Nordic architecture journal. An ink masthead sits over a cool stone plate; the plan is drawn on it with solid ink poché walls and a hairline metre grid; a page-white side page on the right carries the catalogue, the numbered key and the totals, separated by ink rules. The interface is a two-value world, ink and paper, and the single NOVOOI spot yellow marks only what is chosen or what saves.\n\nDensity is that of a printed plate key: fixed type steps, tabular numbers, rules instead of cards. The plan itself is the subject; chrome steps back to outlined ink controls. This world deliberately replaces the incumbent white floating panels with soft shadows and a blue highlight.",
+    "keyCharacteristics": [
+      "Two values (ink #17191A and page-white / stone) plus one spot (#EEFC9B).",
+      "1px ink rules divide docked surfaces; shadow is reserved for things that float.",
+      "4px corners on every control and surface.",
+      "Four fixed type steps (11/13/15/20) in Season Sans; Gazpacho only for the plate title.",
+      "Numbered key markers on the plan matched to numbered rows in the I rommet list."
+    ],
+    "rules": [
+      {
+        "name": "The One Spot Rule",
+        "body": "The spot yellow means \"chosen\" or \"save\". It never fills a panel, a heading or decoration; if nothing is selected and nothing is unsaved, the only spot on screen is the wordmark dot and the Lagre button.",
+        "section": "colors"
+      },
+      {
+        "name": "The Two-Value Rule",
+        "body": "Everything else is ink on paper or paper on ink. A pressed state inverts to ink; it does not introduce a new hue.",
+        "section": "colors"
+      },
+      {
+        "name": "The Four Steps Rule",
+        "body": "Interface text uses only 11, 13, 15 and 20px (`--t-xs/s/m/l`). The 28px plate title and 12px key numbers are the only exceptions.",
+        "section": "typography"
+      },
+      {
+        "name": "The One Serif Rule",
+        "body": "Gazpacho appears on the H1 `.plate-title` and nowhere else.",
+        "section": "typography"
+      },
+      {
+        "name": "The Sentence-Case Rule",
+        "body": "No uppercase or letter-spaced labels; labels are sentence case at 11px, weight 600, in graphite.",
+        "section": "typography"
+      },
+      {
+        "name": "The Tabular Figures Rule",
+        "body": "Areas, heights, prices, counts and key numbers use tabular numerals; totals align right.",
+        "section": "typography"
+      },
+      {
+        "name": "The Rules-Not-Shadows Rule",
+        "body": "If a surface is docked, it gets an ink rule and no shadow. Shadow means \"this floats over the plate\".",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "**Do** separate docked regions with 1px ink rules (#17191A) and keep them shadowless.",
+      "**Do** keep every interface size on the 11/13/15/20px steps.",
+      "**Do** invert pressed states to ink with page-white text.",
+      "**Do** read the canvas colours from `--stage`, `--cap`, `--accent` and `--grid` so the plan and the chrome stay one print job.",
+      "**Do** number every placed product on the plan and in the key list with the same circular badge.",
+      "**Do** use tabular figures for measures, prices and counts."
+    ],
+    "donts": [
+      "**Don't** use the spot yellow for anything except selection, the save action, active tools and key markers.",
+      "**Don't** set Gazpacho anywhere but the plate title H1.",
+      "**Don't** use uppercase or tracked-out labels.",
+      "**Don't** round corners beyond 4px on controls and panels (6px on dialogs only).",
+      "**Don't** put a shadow on a docked surface or a card hover.",
+      "**Don't** reintroduce a blue highlight or blue measurement lines."
+    ]
+  }
+}
