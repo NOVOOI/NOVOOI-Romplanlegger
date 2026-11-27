@@ -51,3 +51,26 @@ test('KEEEP attachment works on all four edges and in rotated layouts',()=>{for(
 test('KEEEP module grid works with default snapping and releases when snapping is off',()=>{const p={productId:65542},c=vm.createContext({product:()=>p,NovooiWorkspace:W,isZenTile:()=>false,isKeeep:()=>true,snapPrefs:{walls:true,objects:false,step:0},S:{items:[]},footOf:()=>({w:58,d:58})});run('moduleSnapResult',c);assert.deepEqual(JSON.parse(JSON.stringify(c.moduleSnapResult({pid:'p',rot:0},10.3,20.8))),{x:10,z:21});c.snapPrefs.walls=false;assert.equal(c.moduleSnapResult({pid:'p',rot:0},10.3,20.8),null)});
 
 test('KEEEP joins a back to both a seat and the neighbouring back at a junction',()=>{const others=[{x:200,z:200,w:58,d:58,rot:0},{x:272.5,z:200,w:87,d:58,rot:0},{x:280,z:156.5,w:87,d:29,rot:0}];assert.deepEqual(W.keeepSnap({x:206.7,z:154.1,w:58,d:29,rot:0},others),{x:207.5,z:156.5,rot:0})});
+
+test('room partitions preserve area and only closed partitions split floors',()=>{
+ const poly=[{x:0,z:0},{x:500,z:0},{x:500,z:400},{x:0,z:400}],wall=(x,z,X,Z)=>({a:{x,z},b:{x:X,z:Z},t:12});
+ for(const corners of [poly,[...poly].reverse()]){
+  for(const [parts,count] of [[[],1],[[wall(250,0,250,400)],2],[[wall(250,100,250,300)],1],[[wall(250,0,250,400),wall(0,200,500,200)],4],[[wall(250,0,250,400),wall(250,200,500,200)],3]]){
+   const regions=W.roomRegions(corners,parts);assert.equal(regions.length,count);assert.ok(Math.abs(regions.reduce((a,r)=>a+r.area,0)-200000)<1);assert.ok(regions.every(r=>W.pointInRoom(r.anchor,r.polygon)));
+  }
+ }
+});
+test('wall cutaway uses finite wall and camera height rather than camera target side',()=>{
+ const wall={a:{x:250,z:0},b:{x:250,z:400}},points=[{x:400,z:200}];
+ assert.equal(W.wallOccludesRoom(wall,{x:0,y:300,z:200},points,260),true);
+ assert.equal(W.wallOccludesRoom(wall,{x:0,y:1000,z:200},points,260),false);
+ assert.equal(W.wallOccludesRoom(wall,{x:0,y:300,z:1000},[{x:400,z:1000}],260),false);
+ assert.equal(W.wallOccludesRoom(wall,{x:300,y:300,z:200},points,260),false);
+});
+test('room finish changes remain isolated and serialize with the plan',()=>{
+ const poly=[{x:0,z:0},{x:500,z:0},{x:500,z:400},{x:0,z:400}],regions=W.roomRegions(poly,[{a:{x:250,z:0},b:{x:250,z:400}}]);let commits=0;
+ const c=vm.createContext({NovooiWorkspace:W,S:{floor:'oak',skirting:'white'},ui:{floorPoint:{x:100,z:100}},floorRegions:regions,buildRoom(){},renderLeft(){},commit(){commits++}});
+ for(const name of ['floorRegionAt','floorStyle','selectedFloorStyle','setFloorStyle'])run(name,c);
+ c.setFloorStyle('floor','walnut');c.setFloorStyle('skirting','none');c.ui.floorPoint={x:400,z:100};assert.equal(c.selectedFloorStyle().floor,'oak');assert.equal(c.selectedFloorStyle().skirting,'white');c.setFloorStyle('floorRot',1);
+ c.S=JSON.parse(JSON.stringify(c.S));c.ui.floorPoint={x:100,z:100};assert.equal(c.selectedFloorStyle().floor,'walnut');assert.equal(c.selectedFloorStyle().skirting,'none');assert.equal(c.selectedFloorStyle().floorRot,0);assert.equal(commits,3);
+});

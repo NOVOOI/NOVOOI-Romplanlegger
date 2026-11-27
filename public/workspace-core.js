@@ -43,5 +43,27 @@
   if(best)return{x:best.x,z:best.z,rot:best.rot};
   return nearest?{x:nearest.x,z:nearest.z}:{x:Math.round(a.x/grid)*grid,z:Math.round(a.z/grid)*grid};
  }
- root.NovooiWorkspace={norm,format,stem,uniqueFiles,modelChoices,sourceLabel,sourceFormat,sourceGroups,family,moduleAttribute,moduleKind,moduleMatch,resolveModule,wallBox,penetration,moduleSnap,keeepSnap};
+ function pointInRoom(p,poly){let inside=false;for(let i=0,j=poly.length-1;i<poly.length;j=i++){const a=poly[i],b=poly[j];if((a.z>p.z)!==(b.z>p.z)&&p.x<(b.x-a.x)*(p.z-a.z)/(b.z-a.z)+a.x)inside=!inside;}return inside;}
+ // Planar wall graph: intersections and T-junctions form bounded faces.
+ // Dangling partitions are pruned, so a short freestanding wall does not split a floor.
+ function roomRegions(corners,partitions=[]){
+  if(corners.length<3)return[];
+  const cross=(a,b)=>a.x*b.z-a.z*b.x,sub=(a,b)=>({x:a.x-b.x,z:a.z-b.z}),lerp=(a,b,t)=>({x:a.x+(b.x-a.x)*t,z:a.z+(b.z-a.z)*t});
+  const segments=corners.map((a,i)=>({a:{...a},b:{...corners[(i+1)%corners.length]},outer:true}));
+  for(const w of partitions){if(!w?.a||!w?.b)continue;const segment={a:{...w.a},b:{...w.b}};for(const end of ['a','b']){const p=segment[end];let best=null;for(const edge of segments){const d=sub(edge.b,edge.a),len=d.x*d.x+d.z*d.z;if(len<.01)continue;const t=Math.max(0,Math.min(1,((p.x-edge.a.x)*d.x+(p.z-edge.a.z)*d.z)/len)),q=lerp(edge.a,edge.b,t),distance=Math.hypot(q.x-p.x,q.z-p.z);if(distance<Math.max(3,(w.t||12)/2+1)&&(!best||distance<best.distance))best={...q,distance};}if(best)segment[end]={x:best.x,z:best.z};}if(Math.hypot(segment.b.x-segment.a.x,segment.b.z-segment.a.z)>.1)segments.push(segment);}
+  const cuts=segments.map(()=>[0,1]);
+  segments.forEach((a,i)=>segments.forEach((b,j)=>{if(j<=i)return;const d=sub(a.b,a.a),e=sub(b.b,b.a),v=sub(b.a,a.a),den=cross(d,e);if(Math.abs(den)>.000001){const t=cross(v,e)/den,u=cross(v,d)/den;if(t>=-1e-6&&t<=1+1e-6&&u>=-1e-6&&u<=1+1e-6){cuts[i].push(Math.max(0,Math.min(1,t)));cuts[j].push(Math.max(0,Math.min(1,u)));}}else if(Math.abs(cross(v,d))<.001){for(const [p,k,edge]of [[a.a,j,b],[a.b,j,b],[b.a,i,a],[b.b,i,a]]){const q=sub(edge.b,edge.a),t=((p.x-edge.a.x)*q.x+(p.z-edge.a.z)*q.z)/(q.x*q.x+q.z*q.z);if(t>=0&&t<=1)cuts[k].push(t);}}}));
+  const nodes=new Map(),node=p=>{const id=Math.round(p.x*100)+','+Math.round(p.z*100);if(!nodes.has(id))nodes.set(id,{id,x:p.x,z:p.z,links:new Set()});return nodes.get(id);};
+  segments.forEach((edge,i)=>{const ts=[...new Set(cuts[i])].sort((a,b)=>a-b);for(let k=1;k<ts.length;k++){const a=node(lerp(edge.a,edge.b,ts[k-1])),b=node(lerp(edge.a,edge.b,ts[k]));if(a.id!==b.id){a.links.add(b.id);b.links.add(a.id);}}});
+  let pruning=true;while(pruning){pruning=false;for(const n of nodes.values())if(n.links.size===1){const id=[...n.links][0];nodes.get(id).links.delete(n.id);n.links.clear();pruning=true;}}
+  const ordered=n=>[...n.links].sort((a,b)=>Math.atan2(nodes.get(a).z-n.z,nodes.get(a).x-n.x)-Math.atan2(nodes.get(b).z-n.z,nodes.get(b).x-n.x));
+  const visited=new Set(),regions=[];
+  for(const start of nodes.values())for(const neighbour of start.links){if(visited.has(start.id+'>'+neighbour))continue;let a=start,b=nodes.get(neighbour),poly=[],closed=false;for(let step=0;step<segments.length*segments.length*4+100;step++){const key=a.id+'>'+b.id;if(visited.has(key)){closed=a.id===start.id&&b.id===neighbour;break;}visited.add(key);poly.push({x:a.x,z:a.z});const links=ordered(b),index=links.indexOf(a.id),next=links[(index-1+links.length)%links.length];a=b;b=nodes.get(next);if(!b)break;}
+   const area=poly.reduce((sum,p,i)=>{const q=poly[(i+1)%poly.length];return sum+p.x*q.z-q.x*p.z;},0)/2;if(!closed||poly.length<3||area<1)continue;
+   const pa=poly[0],pb=poly[1],d=sub(pb,pa),length=Math.hypot(d.x,d.z),anchor={x:(pa.x+pb.x)/2-d.z/length*.1,z:(pa.z+pb.z)/2+d.x/length*.1};if(pointInRoom(anchor,corners))regions.push({polygon:poly,anchor,area});
+  }
+  return regions.length?regions:[{polygon:corners.map(p=>({...p})),anchor:{...corners[0]},area:0}];
+ }
+ function wallOccludesRoom(w,camera,points,height,lowHeight=26){const dx=w.b.x-w.a.x,dz=w.b.z-w.a.z;return points.some(p=>{const vx=p.x-camera.x,vz=p.z-camera.z,den=vx*dz-vz*dx;if(Math.abs(den)<1e-7)return false;const ax=w.a.x-camera.x,az=w.a.z-camera.z,t=(ax*dz-az*dx)/den,u=(ax*vz-az*vx)/den;if(t<=0||t>=1||u<0||u>1)return false;const y=camera.y*(1-t);return y>lowHeight&&y<height;});}
+ root.NovooiWorkspace={norm,format,stem,uniqueFiles,modelChoices,sourceLabel,sourceFormat,sourceGroups,family,moduleAttribute,moduleKind,moduleMatch,resolveModule,wallBox,penetration,moduleSnap,keeepSnap,pointInRoom,roomRegions,wallOccludesRoom};
 })(globalThis);
