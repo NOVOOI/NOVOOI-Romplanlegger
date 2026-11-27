@@ -74,3 +74,9 @@ test('room finish changes remain isolated and serialize with the plan',()=>{
  c.setFloorStyle('floor','walnut');c.setFloorStyle('skirting','none');c.ui.floorPoint={x:400,z:100};assert.equal(c.selectedFloorStyle().floor,'oak');assert.equal(c.selectedFloorStyle().skirting,'white');c.setFloorStyle('floorRot',1);
  c.S=JSON.parse(JSON.stringify(c.S));c.ui.floorPoint={x:100,z:100};assert.equal(c.selectedFloorStyle().floor,'walnut');assert.equal(c.selectedFloorStyle().skirting,'none');assert.equal(c.selectedFloorStyle().floorRot,0);assert.equal(commits,3);
 });
+test('cutaway samples long room boundaries and checks outer walls as finite segments',()=>{
+ const c=vm.createContext({NovooiWorkspace:W});run('roomSightPoints',c);
+ const regions=W.roomRegions([{x:0,z:0},{x:600,z:0},{x:600,z:800},{x:0,z:800}]);const samples=c.roomSightPoints(regions);assert.ok(samples.length>30);assert.ok(samples.every(p=>W.pointInRoom(p,regions[0].polygon)));
+ assert.ok(samples.some(p=>p.x>500&&p.z===10));
+ assert.ok(W.wallOccludesRoom({a:{x:0,z:400},b:{x:600,z:400}},{x:300,y:500,z:1000},samples,260));
+});
