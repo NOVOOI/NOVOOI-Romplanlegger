@@ -64,6 +64,6 @@
   }
   return regions.length?regions:[{polygon:corners.map(p=>({...p})),anchor:{...corners[0]},area:0}];
  }
- function wallOccludesRoom(w,camera,points,height,lowHeight=26){const dx=w.b.x-w.a.x,dz=w.b.z-w.a.z;return points.some(p=>{const vx=p.x-camera.x,vz=p.z-camera.z,den=vx*dz-vz*dx;if(Math.abs(den)<1e-7)return false;const ax=w.a.x-camera.x,az=w.a.z-camera.z,t=(ax*dz-az*dx)/den,u=(ax*vz-az*vx)/den;if(t<=0||t>=1||u<0||u>1)return false;const y=camera.y*(1-t);return y>lowHeight&&y<height;});}
+ function wallOccludesRoom(w,camera,points,height,lowHeight=26,focus=null){const dx=w.b.x-w.a.x,dz=w.b.z-w.a.z;return points.some(p=>{const vx=p.x-camera.x,vz=p.z-camera.z,den=vx*dz-vz*dx;if(Math.abs(den)<1e-7)return false;const ax=w.a.x-camera.x,az=w.a.z-camera.z,t=(ax*dz-az*dx)/den,u=(ax*vz-az*vx)/den;if(t<=0||t>=1||u<0||u>1)return false;if(focus){const fx=focus.x-camera.x,fz=focus.z-camera.z,length=Math.hypot(fx,fz);if(length>1){const depth=((vx*t)*fx+(vz*t)*fz)/length;if(depth>=length-10)return false;}}const y=camera.y*(1-t);return y>lowHeight&&y<height;});}
  root.NovooiWorkspace={norm,format,stem,uniqueFiles,modelChoices,sourceLabel,sourceFormat,sourceGroups,family,moduleAttribute,moduleKind,moduleMatch,resolveModule,wallBox,penetration,moduleSnap,keeepSnap,pointInRoom,roomRegions,wallOccludesRoom};
 })(globalThis);
