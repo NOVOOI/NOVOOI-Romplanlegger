@@ -149,7 +149,7 @@ button:not(:disabled):active{transform:none}
 
 /* Totals footer */
 .catalog-footer{padding:0;border-top:1px solid var(--ink)}
-.catalog-footer .pill-total{height:48px;border:0;border-radius:0 0 3px 3px;background:var(--ink);color:var(--on-ink);padding:0 16px;font-size:var(--t-s)}
+.catalog-footer .pill-total{height:48px;border:0;border-radius:0 0 var(--rs) var(--rs);background:var(--ink);color:var(--on-ink);padding:0 16px;font-size:var(--t-s)}
 .catalog-footer .pill-total>span:first-child{font-size:var(--t-s);font-weight:600;letter-spacing:0}
 .catalog-footer .pill-total .cnt{color:var(--spot);font-size:var(--t-s);font-weight:600;font-variant-numeric:tabular-nums}
 .catalog-footer .pill-total:hover{background:var(--ink-2)}
