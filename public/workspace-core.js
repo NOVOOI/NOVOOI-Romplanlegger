@@ -65,5 +65,13 @@
   return regions.length?regions:[{polygon:corners.map(p=>({...p})),anchor:{...corners[0]},area:0}];
  }
  function wallOccludesRoom(w,camera,points,height,lowHeight=26,focus=null){const dx=w.b.x-w.a.x,dz=w.b.z-w.a.z;return points.some(p=>{const vx=p.x-camera.x,vz=p.z-camera.z,den=vx*dz-vz*dx;if(Math.abs(den)<1e-7)return false;const ax=w.a.x-camera.x,az=w.a.z-camera.z,t=(ax*dz-az*dx)/den,u=(ax*vz-az*vx)/den;if(t<=0||t>=1||u<0||u>1)return false;if(focus){const fx=focus.x-camera.x,fz=focus.z-camera.z,length=Math.hypot(fx,fz);if(length>1){const depth=((vx*t)*fx+(vz*t)*fz)/length;if(depth>=length-10)return false;}}const y=camera.y*(1-t);return y>lowHeight&&y<height;});}
- root.NovooiWorkspace={norm,format,stem,uniqueFiles,modelChoices,sourceLabel,sourceFormat,sourceGroups,family,moduleAttribute,moduleKind,moduleMatch,resolveModule,wallBox,penetration,moduleSnap,keeepSnap,pointInRoom,roomRegions,wallOccludesRoom};
+ /* Stable cutaway: how much of the visible room a wall covers, and whether it stands between the camera and the focus.
+    margin widens the wall at its ends (cm) so a wall that is already hidden does not flicker back at its edge. */
+ function wallOcclusion(w,camera,points,height,lowHeight=26,focus=null,margin=0){const dx=w.b.x-w.a.x,dz=w.b.z-w.a.z,len=Math.hypot(dx,dz)||1,m=margin/len;
+  const cross=(px,pz,py)=>{const vx=px-camera.x,vz=pz-camera.z,den=vx*dz-vz*dx;if(Math.abs(den)<1e-7)return false;const ax=w.a.x-camera.x,az=w.a.z-camera.z,t=(ax*dz-az*dx)/den,u=(ax*vz-az*vx)/den;if(t<=0||t>=1||u<-m||u>1+m)return false;const y=camera.y+(py-camera.y)*t;return y>lowHeight&&y<height};
+  let flen=0,fx=0,fz=0;if(focus){fx=focus.x-camera.x;fz=focus.z-camera.z;flen=Math.hypot(fx,fz)}
+  if(flen>1){const near=Math.min(((w.a.x-camera.x)*fx+(w.a.z-camera.z)*fz)/flen,((w.b.x-camera.x)*fx+(w.b.z-camera.z)*fz)/flen);if(near>=flen-10)return{share:0,blocksFocus:false}}
+  let hit=0;for(const p of points)if(cross(p.x,p.z,0))hit++;const seen=points.length;
+  const blocksFocus=flen>1&&(cross(focus.x,focus.z,40)||cross(focus.x,focus.z,110));return{share:seen?hit/seen:0,blocksFocus}}
+ root.NovooiWorkspace={norm,format,stem,uniqueFiles,modelChoices,sourceLabel,sourceFormat,sourceGroups,family,moduleAttribute,moduleKind,moduleMatch,resolveModule,wallBox,penetration,moduleSnap,keeepSnap,pointInRoom,roomRegions,wallOccludesRoom,wallOcclusion};
 })(globalThis);

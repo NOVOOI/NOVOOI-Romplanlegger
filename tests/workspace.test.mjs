@@ -86,3 +86,11 @@ test('cutaway retains a wall behind the focus even if it obscures a distant room
  assert.equal(W.wallOccludesRoom(w,camera,points,260,26,{x:250,z:200}),false);
  assert.equal(W.wallOccludesRoom(w,camera,points,260,26,{x:350,z:200}),true);
 });
+test('stable cutaway measures covered share, keeps walls behind the focus and hides walls in front of it',()=>{
+ const wall={a:{x:250,z:0},b:{x:250,z:400}},camera={x:0,y:300,z:200},points=[];for(let x=270;x<500;x+=40)for(let z=20;z<400;z+=40)points.push({x,z});
+ const front=W.wallOcclusion(wall,camera,points,260,26,{x:400,z:200});assert.ok(front.blocksFocus);assert.ok(front.share>.05);
+ const behind=W.wallOcclusion(wall,camera,points,260,26,{x:150,z:200});assert.equal(behind.blocksFocus,false);assert.equal(behind.share,0);
+ const high=W.wallOcclusion(wall,{x:0,y:2000,z:200},points,260,26,{x:400,z:200});assert.equal(high.blocksFocus,false);assert.ok(high.share<front.share);
+ const edge={a:{x:250,z:0},b:{x:250,z:195}},grazing=W.wallOcclusion(edge,camera,[{x:400,z:200}],260,26,null);assert.equal(grazing.share,0);
+ assert.equal(W.wallOcclusion(edge,camera,[{x:400,z:200}],260,26,null,25).share,1);
+});
