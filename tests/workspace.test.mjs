@@ -80,3 +80,9 @@ test('cutaway samples long room boundaries and checks outer walls as finite segm
  assert.ok(samples.some(p=>p.x>500&&p.z===10));
  assert.ok(W.wallOccludesRoom({a:{x:0,z:400},b:{x:600,z:400}},{x:300,y:500,z:1000},samples,260));
 });
+test('cutaway retains a wall behind the focus even if it obscures a distant room',()=>{
+ const w={a:{x:250,z:0},b:{x:250,z:400}},camera={x:0,y:300,z:200},points=[{x:400,z:200}];
+ assert.equal(W.wallOccludesRoom(w,camera,points,260,26,{x:150,z:200}),false);
+ assert.equal(W.wallOccludesRoom(w,camera,points,260,26,{x:250,z:200}),false);
+ assert.equal(W.wallOccludesRoom(w,camera,points,260,26,{x:350,z:200}),true);
+});
