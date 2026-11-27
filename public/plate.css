@@ -1,0 +1,211 @@
+/* Planplansje: the room published as a plate. Loaded last; owns the visual world.
+   Ink masthead and poché walls, cool stone plate, page-white side page with ink rules,
+   NOVOOI spot (#EEFC9B) only for selection, the primary action and key markers. */
+:root{
+  --ink:#17191A; --ink-2:#2B2E2F; --ink-line:#3A3E3F; --on-ink:#FAFAF8; --on-ink-muted:#BFC3BC;
+  --bg:#E4E6E1; --stage:#E4E6E1; --panel:#FAFAF8; --panel2:#EEEFEB; --tint:#F4F8DD;
+  --muted:#4C504A; --line:#CDD0C9; --spot:#EEFC9B;
+  --accent:#17191A; --accent-ink:#FAFAF8; --accent-soft:#EEFC9B;
+  --cap:#17191A; --grid:#B3B8AE; --hl:#17191A; --danger:#A8261C; --warn:#8A5A00;
+  --r:4px; --rs:4px; --shadow:none; --control-radius:4px;
+  --lift:0 8px 24px rgba(23,25,26,.14);
+  --t-xs:11px; --t-s:13px; --t-m:15px; --t-l:20px;
+  accent-color:var(--ink); caret-color:var(--ink);
+  scrollbar-color:#B3B8AE transparent;
+}
+::selection{background:var(--spot);color:var(--ink)}
+:focus-visible,button:focus-visible,a:focus-visible,summary:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+body{background:var(--bg);color:var(--ink);font-size:var(--t-s)}
+button:not(:disabled):hover{box-shadow:none}
+button:not(:disabled):active{transform:none}
+
+/* Shared controls */
+.ibtn,.btn,.txt,.search,.seg,.vseg,.num,.chip,.card,.li,.note,.dsbar,.selbar,.dim,.toast,.pill-total,.cats button,.slots button,.paint,.floor,.shape,.upl,.imp{border-radius:var(--rs)}
+.ibtn{border:1px solid var(--line);background:var(--panel);color:var(--ink);transition:background .15s,border-color .15s,color .15s}
+.ibtn:hover{border-color:var(--ink)}
+.ibtn:disabled{opacity:.38}
+.ibtn svg{width:18px;height:18px}
+.btn{background:var(--ink);color:var(--on-ink);border:1px solid var(--ink);text-transform:none;letter-spacing:0;font-size:var(--t-s);font-weight:600;padding:9px 14px;transition:background .15s,color .15s,border-color .15s}
+.btn:hover{background:var(--ink-2)}
+.btn.ghost{background:var(--panel);color:var(--ink);border-color:var(--line)}
+.btn.ghost:hover{border-color:var(--ink);background:var(--panel)}
+.btn.danger{background:var(--danger);border-color:var(--danger)}
+.btn svg,.compact-upload summary svg{width:16px;height:16px;vertical-align:-3px;margin-right:8px;flex:none}
+.txt,select.txt{border:1px solid var(--line);background:var(--panel);color:var(--ink)}
+.txt:focus,.search:focus-within,.num:focus-within{border-color:var(--ink);outline:none}
+.lbl,.ctabs button,.vseg button,.cats button,.pill-total>span:first-child{text-transform:none;letter-spacing:0}
+.lbl{font-size:var(--t-xs);font-weight:600;color:var(--muted)}
+.note{background:var(--panel2);color:var(--ink)}
+.hint,.pstock,.product-dimensions,.room-count,.catalog-result-bar .catalog-count{color:var(--muted)}
+.cats button[aria-pressed="true"],.slots button[aria-pressed="true"]{background:var(--ink);color:var(--on-ink);border-color:var(--ink)}
+.paint[aria-pressed="true"],.floor[aria-pressed="true"]{border-color:var(--ink);box-shadow:0 0 0 2px var(--ink) inset}
+.seg{background:var(--panel2);border-color:var(--line)}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--on-ink);box-shadow:none}
+
+/* Masthead */
+.top{background:var(--ink);color:var(--on-ink);border-bottom:0}
+.top .brand{position:relative;margin-right:8px}
+.top .brand img{filter:invert(1)}
+.top .brand::after{content:"";position:absolute;right:-9px;top:3px;width:7px;height:7px;border-radius:50%;background:var(--spot)}
+.top .plan-identity{border-left:1px solid var(--ink-line);padding-left:16px;margin-left:12px}
+.top .plan-identity .title-in{color:var(--on-ink);font-size:var(--t-m);font-weight:500;border-color:transparent}
+.top .plan-identity .title-in:hover{border-color:var(--ink-line)}
+.top .plan-identity .title-in:focus{background:var(--ink-2);border-color:var(--spot)}
+.top .save-state,.plan-identity .save-state,.top .save-group #saveState{color:var(--on-ink-muted);font-size:var(--t-xs)}
+.top .ibtn{background:transparent;color:var(--on-ink);border-color:#62676A}
+.top .ibtn:hover{border-color:var(--on-ink);background:var(--ink-2)}
+.top .ibtn[aria-expanded="true"]{background:var(--ink-2);border-color:var(--on-ink-muted)}
+.top .primary-save,.top #saveDesign{background:var(--spot);color:var(--ink);border-color:var(--spot)}
+.top .primary-save:hover,.top #saveDesign:hover{background:#E3F28A;border-color:#E3F28A}
+.top :focus-visible{outline-color:var(--spot)}
+.top .view-badge{color:var(--ink);background:var(--spot);border-radius:var(--rs);padding:2px 8px;font-size:var(--t-xs);font-weight:600}
+.header-menu{background:var(--panel);border:1px solid var(--ink);border-radius:var(--rs);box-shadow:var(--lift)}
+.header-menu .ibtn{border:0;border-radius:2px;color:var(--ink);background:transparent}
+.header-menu .ibtn:hover{background:var(--panel2)}
+
+/* Stage: the plate */
+.stage{background:var(--stage)}
+.vseg{background:var(--panel);border:1px solid var(--ink);padding:0;gap:0;overflow:hidden;box-shadow:none}
+.vseg button{border-radius:0;padding:9px 16px;color:var(--ink);font-size:var(--t-s);font-weight:600}
+.vseg button[aria-pressed="true"]{background:var(--ink);color:var(--on-ink)}
+.st-top .tools .ibtn,.st-top #sceneLighting,#snap{background:var(--panel);border:1px solid var(--line);color:var(--ink);box-shadow:none}
+.st-top .tools .ibtn:hover,.st-top #sceneLighting:hover{border-color:var(--ink)}
+.st-top .tools .ibtn[aria-pressed="true"],.st-top .tools .ibtn[aria-expanded="true"],.st-top #sceneLighting[aria-expanded="true"]{background:var(--spot);border-color:var(--ink);color:var(--ink)}
+.st-info{display:grid;grid-template-columns:auto 1fr;justify-items:start;justify-content:start;width:max-content;align-items:baseline;gap:2px 16px;max-width:min(560px,calc(100% - 24px));padding:0;background:transparent}
+.st-info .plate-title{grid-column:1/-1;margin:0 0 2px;font-family:Gazpacho,"Season Sans",serif!important;font-weight:400;font-size:28px;line-height:1.1;letter-spacing:-.01em;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.st-info .chip{background:transparent;border:0;box-shadow:none;padding:0;font-size:var(--t-s);color:var(--muted);border-radius:0}
+.st-info .chip b{color:var(--ink);font-weight:600;font-variant-numeric:tabular-nums}
+.st-info .chip.btnchip{text-decoration:underline;text-decoration-color:var(--line);text-underline-offset:4px}
+.st-info .chip.btnchip:hover{text-decoration-color:var(--ink);border:0}
+.st-hint{background:var(--panel);border-color:var(--line);color:var(--muted);border-radius:var(--rs)}
+.hc{background:var(--panel);border:2.5px solid var(--ink);box-shadow:none}
+.hc.iwh.selected{background:var(--spot);outline:2px solid var(--ink)}
+.ha{background:var(--ink);color:var(--on-ink)}
+.dim,#liveMeasures button,#liveMeasures .measure-editor{color:var(--ink)}
+#liveMeasures line{stroke:var(--ink);stroke-opacity:.7}
+.wall-side-marker{background:var(--ink);color:var(--spot);border-color:var(--panel)}
+.wall-selection-label{background:var(--ink)!important;color:var(--on-ink)!important;border-radius:var(--rs)!important}
+.roompop,.planner-tool-panel,.lighting-panel,.lamp-panel{background:var(--panel);border:1px solid var(--ink);border-radius:var(--rs);box-shadow:var(--lift)}
+.placement-help{border:1px solid var(--ink);border-radius:var(--rs);box-shadow:var(--lift)}
+
+/* Signature: numbered key markers on the plan */
+.key-markers{position:absolute;inset:0;pointer-events:none;overflow:hidden;z-index:9}
+.key-marker{position:absolute;left:0;top:0;width:24px;height:24px;margin:-12px 0 0 -12px;display:grid;place-items:center;border-radius:50%;background:var(--panel);color:var(--ink);border:1.5px solid var(--ink);font-size:12px;font-weight:700;line-height:1;font-variant-numeric:tabular-nums;box-shadow:0 1px 3px rgba(23,25,26,.22);will-change:transform}
+.key-marker.on{background:var(--ink);color:var(--spot)}
+
+/* Selection bar */
+.selbar{background:var(--panel);border:1px solid var(--ink);border-radius:var(--rs);box-shadow:var(--lift)}
+.selbar img{background:var(--panel2);border-radius:2px}
+.selbar .ibtn{border-color:var(--line)}
+.selbar .del:hover{color:var(--danger);border-color:var(--danger)}
+.selbar #sBox,.selbar .precision-controls{border:1px solid var(--ink);border-radius:var(--rs);box-shadow:var(--lift)}
+
+/* Side page: catalogue, product and key list */
+.cat.surf{background:var(--panel);border:1px solid var(--ink);border-radius:var(--rs);box-shadow:none}
+.ctabs{padding:0;gap:0;border-bottom:1px solid var(--ink)}
+.ctabs button{margin:0;padding:14px 6px;border:0;border-radius:0;color:var(--ink);font-size:var(--t-s);font-weight:600}
+.ctabs button:hover{background:var(--panel2)}
+.ctabs button[aria-pressed="true"]{background:var(--ink);color:var(--on-ink);border:0}
+#tCat[data-sync="1"]::after{background:var(--spot);box-shadow:0 0 0 1px var(--ink)}
+.cbody{padding:16px}
+.search{background:var(--panel);border:1px solid var(--line)}
+.catalog-filters label{color:var(--muted)}
+.catalog-sync{border-color:var(--line)}
+.catalog-grid{gap:8px}
+.catalog-grid .product-family{border:1px solid var(--line);border-radius:var(--rs);background:var(--panel);transition:border-color .15s}
+.catalog-grid .product-family:hover{border-color:var(--ink)}
+.product-photo{background:var(--panel2);border-radius:2px}
+.product-family-name small,.card .cbrand,.pbrand,.room-product-info small{text-transform:none;letter-spacing:0;font-size:var(--t-xs);color:var(--muted)}
+.product-family-name b{font-size:var(--t-s)}
+.product-family .family-chevron{border-color:var(--line);border-radius:var(--rs)}
+.product-family .family-chevron svg{width:14px;height:14px}
+.card{border:1px solid var(--line);border-radius:var(--rs);background:var(--panel)}
+.card:hover{transform:none;box-shadow:none;border-color:var(--ink)}
+.card:hover .th img{transform:none}
+.card .add{background:var(--ink);color:var(--on-ink)}
+.pbrand{margin-bottom:-10px}
+.ptitle{font-size:var(--t-l);font-weight:600}
+.pprice{font-size:var(--t-m);font-weight:600;font-variant-numeric:tabular-nums}
+.psec{border-top-color:var(--line)}
+.compact-upload summary{display:flex;align-items:center}
+.drow:hover{background:var(--panel2)}
+.dmsg{border-radius:var(--rs)}
+
+/* Key list (I rommet) */
+.room-list-head h2{font-size:var(--t-l);font-weight:600;letter-spacing:0}
+.room-list-head>span{font-size:var(--t-xs);color:var(--muted)}
+.room-products{gap:0;border-top:1px solid var(--ink)}
+.room-product{border:0;border-bottom:1px solid var(--line);border-radius:0;background:transparent}
+.room-product-main{padding:12px 4px;gap:12px}
+.room-product-main:hover{background:var(--panel2)}
+.room-product-main[aria-pressed="true"]{background:var(--tint)}
+.key-no{flex:none;width:24px;height:24px;display:grid;place-items:center;border-radius:50%;border:1.5px solid var(--ink);font-size:12px;font-weight:700;font-variant-numeric:tabular-nums;color:var(--ink);background:var(--panel)}
+.room-product-main[aria-pressed="true"] .key-no{background:var(--spot)}
+.room-product-image{width:56px;height:48px;border-radius:2px}
+.room-product-actions{padding:0 4px 12px 40px}
+.room-product-actions .ibtn{font-size:var(--t-xs)}
+.room-product-actions [aria-pressed="true"]{background:var(--spot);border-color:var(--ink)}
+.room-product .room-shop-link{margin:0 4px 12px 40px}
+
+/* Totals footer */
+.catalog-footer{padding:0;border-top:1px solid var(--ink)}
+.catalog-footer .pill-total{height:48px;border:0;border-radius:0 0 3px 3px;background:var(--ink);color:var(--on-ink);padding:0 16px;font-size:var(--t-s)}
+.catalog-footer .pill-total>span:first-child{font-size:var(--t-s);font-weight:600;letter-spacing:0}
+.catalog-footer .pill-total .cnt{color:var(--spot);font-size:var(--t-s);font-weight:600;font-variant-numeric:tabular-nums}
+.catalog-footer .pill-total:hover{background:var(--ink-2)}
+.sum{border-top:1px solid var(--ink)}
+.sum div span:last-child,.li .p{font-variant-numeric:tabular-nums;text-align:right}
+
+/* Dialogs, tour, toast */
+.design-dialog{border:1px solid var(--ink);border-radius:6px;background:var(--panel);box-shadow:0 24px 60px rgba(23,25,26,.28)}
+.design-dialog::backdrop{background:rgba(23,25,26,.5);backdrop-filter:none}
+.design-dialog h2{font-size:var(--t-l);font-weight:600}
+.design-dialog p{color:var(--muted)}
+.dialog-head .ibtn svg{width:18px;height:18px}
+.start-options .btn{display:grid;grid-template-columns:20px minmax(0,1fr);column-gap:12px;align-items:center;justify-items:start;padding:14px 16px;text-transform:none;letter-spacing:0;font-size:var(--t-m)}
+.start-options .btn svg{grid-row:1/3;width:20px;height:20px;margin:0}
+.start-options .btn small{grid-column:2;text-transform:none;letter-spacing:0;font-size:var(--t-s);opacity:1;color:inherit;font-weight:400}
+.start-options .btn.ghost small{color:var(--muted)}
+.tour-spot{border:2px solid var(--spot);border-radius:6px;box-shadow:0 0 0 9999px rgba(23,25,26,.55)}
+.tour-card{border:1px solid var(--ink);border-radius:6px;box-shadow:0 18px 50px rgba(23,25,26,.3)}
+.tour-card .tour-heading span{font-size:var(--t-xs);font-weight:600;color:var(--muted);letter-spacing:0}
+.tour-card .tour-action{border:1px solid var(--line);border-radius:var(--rs);background:var(--panel2);padding:8px 10px}
+.tour-progress i{background:var(--line)}
+.tour-progress i.active{background:var(--ink)}
+.toast{background:var(--ink);color:var(--on-ink);border-radius:var(--rs)}
+.present-tools{background:var(--ink);color:var(--on-ink);border-radius:var(--rs)}
+.present-tools .ibtn{background:transparent;color:var(--on-ink);border-color:var(--ink-line)}
+
+/* Desktop layout: the side page sits flush on the right edge. */
+@media (min-width:781px){
+  body:not(.readonly):not(.presenting) #app:not(.catalog-closed){--catalog-offset:var(--catalog-width)}
+  #app .cat{inset:0 0 0 auto;border:0;border-left:1px solid var(--ink);border-radius:0;box-shadow:none}
+  .catalog-footer .pill-total{border-radius:0}
+  #app .lp{border:1px solid var(--ink);border-radius:var(--rs);box-shadow:var(--lift)}
+}
+
+/* Phone: keep the ink masthead compact; the caption drops its title. */
+@media (max-width:780px){
+  .top .plan-identity{border-left:0;padding-left:0;margin-left:0}
+  .top .brand::after{display:none}
+  .st-info{padding:0;background:transparent}
+  .st-info .plate-title{display:none}
+  .st-info .chip{background:var(--panel);border:1px solid var(--line);padding:4px 8px;border-radius:var(--rs)}
+  .mobile-nav{background:var(--panel);border-top:1px solid var(--ink)}
+  .mobile-nav button[aria-pressed=true]{background:var(--spot);color:var(--ink)}
+}
+@media (prefers-reduced-motion:reduce){.ibtn,.btn,.catalog-grid .product-family{transition:none}}
+.top .brand span,.present-tools span{color:var(--on-ink-muted)}
+
+/* Key list stays a dense numbered key: row actions only where they are needed. */
+.room-product .room-product-actions,.room-product .room-shop-link{display:none}
+.room-product:has(.room-product-main[aria-pressed="true"]) .room-product-actions,.room-product.is-hidden .room-product-actions,.room-product:has([data-lock][aria-pressed="true"]) .room-product-actions,.room-product:has(:focus-visible) .room-product-actions{display:flex}
+.room-product:has(.room-product-main[aria-pressed="true"]) .room-shop-link,.room-product:has(:focus-visible) .room-shop-link{display:inline-flex}
+.pback{display:inline-flex;align-items:center;gap:4px}.pback svg{width:16px;height:16px}
+.drow .go svg,.file-choice span[aria-hidden] svg{width:16px;height:16px;vertical-align:-3px}
+[data-favorite] svg,.ibtn[aria-pressed] svg{width:18px;height:18px}
+.tour-card .tour-heading{justify-content:flex-end}
+.tour-count{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+.mobile-nav .ui-icon{width:22px;height:22px}
+.top #undo,.top #redo{width:34px;min-width:34px;border-color:#62676A}
+.top #undo:disabled,.top #redo:disabled{opacity:.45}
