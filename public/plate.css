@@ -229,3 +229,21 @@ input::placeholder,textarea::placeholder{color:#6B6F69;opacity:1}
   .mobile-tools-open .st-top .tools .ibtn,.mobile-tools-open .st-top .tools #snap{display:flex;align-items:center;justify-content:flex-start;gap:10px;width:auto;max-width:none;min-width:0;padding:0 12px}
   .mobile-tools-open .st-top .tools .mobile-tool-label{display:inline;font-size:var(--t-s);white-space:nowrap}
 }
+
+/* While the wall or floor panel is open on desktop, it owns the left edge: the plate caption steps aside. */
+@media (min-width:781px){#app:not(.nopanel) .st-info{visibility:hidden}}
+
+/* Produktliste: the plate's key as a list to hand over. Key numbers match the plan; no prices. */
+.product-list{list-style:none;margin:0;padding:0;border-top:1px solid var(--ink)}
+.pl-row{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:12px;align-items:start;padding:12px 4px;border-bottom:1px solid var(--line)}
+.pl-keys{display:flex;flex-wrap:wrap;gap:4px;width:52px}
+.pl-info{display:grid;gap:3px;min-width:0}
+.pl-info small{font-size:var(--t-xs);color:var(--muted)}
+.pl-info b{font-size:var(--t-s);font-weight:600;overflow-wrap:anywhere}
+.pl-info>span:not(.pl-order){font-size:var(--t-xs);color:var(--muted)}
+.pl-shop{justify-self:start;margin-top:2px;font-size:var(--t-xs);font-weight:600;color:var(--ink);text-decoration:underline;text-underline-offset:3px}
+.pl-order{justify-self:start;margin-top:2px;padding:1px 6px;border:1px solid var(--ink);border-radius:var(--rs);font-size:var(--t-xs);font-weight:600}
+.pl-qty{font-size:var(--t-s);font-weight:600;font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap}
+.pl-note{margin:12px 0 0;font-size:var(--t-xs);color:var(--muted);line-height:1.5}
+.room-export{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.room-export .btn{flex:1 1 auto;text-align:center;text-decoration:none}
