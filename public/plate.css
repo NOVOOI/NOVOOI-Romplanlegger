@@ -209,3 +209,7 @@ button:not(:disabled):active{transform:none}
 .mobile-nav .ui-icon{width:22px;height:22px}
 .top #undo,.top #redo{width:34px;min-width:34px;border-color:#62676A}
 .top #undo:disabled,.top #redo:disabled{opacity:.45}
+
+/* Until the boot script has rebuilt the header and tool stack, show only the fixed frame (logo, plan name, plate, side page) so the pre-script layout never flashes. */
+.booting .top>*:not(.brand):not(.title-in):not(.plan-identity),.booting .st-top,.booting .st-info,.booting .cat>*{visibility:hidden}
+@media (min-width:781px){.top>.title-in{margin-left:28px;font-size:var(--t-m);font-weight:500;color:var(--on-ink)}}
