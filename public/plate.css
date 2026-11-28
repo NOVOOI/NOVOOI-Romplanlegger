@@ -213,3 +213,19 @@ button:not(:disabled):active{transform:none}
 /* Until the boot script has rebuilt the header and tool stack, show only the fixed frame (logo, plan name, plate, side page) so the pre-script layout never flashes. */
 .booting .top>*:not(.brand):not(.title-in):not(.plan-identity),.booting .st-top,.booting .st-info,.booting .cat>*{visibility:hidden}
 @media (min-width:781px){.top>.title-in{margin-left:28px;font-size:var(--t-m);font-weight:500;color:var(--on-ink)}}
+
+/* Critique fixes: close icons keep their size, grouped menu, clear selection marks, readable placeholders. */
+button svg.i-close{display:block;width:18px;height:18px;flex:none}
+.pclose,#closeToolPanel,#rpX{display:inline-grid;place-items:center;min-width:36px;min-height:36px;padding:0;border-radius:var(--rs);color:var(--ink)}
+.pclose:hover,#closeToolPanel:hover,#rpX:hover{background:var(--panel2)}
+.header-menu .menu-sep{border:0;border-top:1px solid var(--line);margin:4px 8px;width:auto}
+.paint[aria-pressed="true"]>i{position:relative}
+.paint[aria-pressed="true"]>i::after{content:"";position:absolute;right:6px;top:6px;width:18px;height:18px;border-radius:50%;background:var(--ink) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23EEFC9B' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 12 4 4 8-8'/%3E%3C/svg%3E") center/12px no-repeat;box-shadow:0 0 0 2px var(--panel)}
+.sw button{width:30px;height:30px}
+.sw button[aria-pressed="true"]{box-shadow:0 0 0 2px var(--panel),0 0 0 4px var(--ink)}
+input::placeholder,textarea::placeholder{color:#6B6F69;opacity:1}
+@media (max-width:780px){
+  .mobile-nav button{font-size:11px}
+  .mobile-tools-open .st-top .tools .ibtn,.mobile-tools-open .st-top .tools #snap{display:flex;align-items:center;justify-content:flex-start;gap:10px;width:auto;max-width:none;min-width:0;padding:0 12px}
+  .mobile-tools-open .st-top .tools .mobile-tool-label{display:inline;font-size:var(--t-s);white-space:nowrap}
+}
